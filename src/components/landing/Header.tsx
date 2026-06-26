@@ -33,12 +33,11 @@ export function Header() {
             />
           </a>
 
-          <a
-            href={INTERNAL_SYSTEM_NAV_URL}
-            className="btn-base btn-cta hidden lg:inline-flex"
-          >
-            Acessar Sistema
-          </a>
+          <div className="hidden lg:block">
+            <a href={INTERNAL_SYSTEM_NAV_URL} className="btn-base btn-cta">
+              Acessar Sistema
+            </a>
+          </div>
 
           <button
             type="button"
