@@ -1,65 +1,13 @@
-import { SOCIAL_LINKS } from "@/lib/constants";
-import { SocialPostPlaceholder } from "@/components/placeholders/SocialPostPlaceholder";
+import { Icon } from "@/components/design-system/Icon";
 import { SocialIcon } from "@/components/landing/SocialIcon";
+import { SOCIAL_LINKS } from "@/lib/constants";
 
 export function SocialMedia() {
   return (
-    <section
-      id="redes-sociais"
-      className="scroll-mt-44 bg-white py-20 sm:py-24"
-    >
-      <div className="mx-auto grid w-full max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-        <div className="scroll-reveal" data-reveal="left">
-          <p className="section-eyebrow">Redes sociais</p>
-          <h2 className="section-title mt-3 text-3xl font-bold sm:text-4xl">
-            Acompanhe oportunidades, eventos e formações
-          </h2>
-          <p className="section-copy mt-6 text-lg leading-8">
-            Acompanhe o INAT nas redes sociais e fique por dentro de
-            oportunidades, eventos, formações e ações com os jovens aprendizes.
-          </p>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            {SOCIAL_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="card-muted flex items-center gap-4 p-5 font-semibold text-[var(--inat-primary)] transition hover:bg-white"
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white text-[var(--inat-secondary)] shadow-[inset_0_0_0_1px_rgba(32,52,54,0.08)]">
-                  <SocialIcon label={link.label} className="size-5" />
-                </span>
-                <span>
-                  {link.label}
-                  <span className="section-copy mt-1 block text-sm font-normal">
-                    Abrir em nova aba
-                  </span>
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          {/* TODO: Replace placeholders with authorized screenshots or embedded official posts. */}
-          <SocialPostPlaceholder
-            title="Publicação institucional"
-            className="scroll-reveal"
-            revealDirection="right"
-          />
-          <SocialPostPlaceholder
-            title="Oportunidades e avisos"
-            className="scroll-reveal"
-            revealDirection="right"
-          />
-          <SocialPostPlaceholder
-            title="Eventos e formações"
-            className="scroll-reveal sm:col-span-2"
-            revealDirection="up"
-          />
-        </div>
+    <section id="redes-sociais" className="scroll-mt-24 bg-[var(--inat-paper)] py-16 sm:py-20">
+      <div className="mx-auto grid w-full max-w-[90rem] gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.2fr] lg:items-center lg:px-8">
+        <div className="scroll-reveal" data-reveal="left"><p className="section-eyebrow">Acompanhe de perto</p><h2 className="section-title mt-4 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">O INAT também acontece nas redes.</h2><p className="section-copy mt-4 max-w-xl text-sm leading-7">Oportunidades, formações, eventos e histórias do nosso trabalho em Paranaguá.</p></div>
+        <div className="grid gap-3 sm:grid-cols-3">{SOCIAL_LINKS.map((link, index) => <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className="scroll-reveal group flex min-h-24 items-center gap-4 border border-[var(--inat-line)] bg-white p-4 transition hover:border-[var(--inat-teal)]" data-reveal={index % 2 ? "right" : "left"}><span className="grid size-10 place-items-center bg-[var(--inat-mist)] text-[var(--inat-teal-dark)]"><SocialIcon label={link.label} className="size-4" /></span><span className="font-semibold text-[var(--inat-ink)]">{link.label}</span><Icon name="external" className="ml-auto size-4 text-[var(--inat-muted)] transition group-hover:text-[var(--inat-teal-dark)]" /></a>)}</div>
       </div>
     </section>
   );

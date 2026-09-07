@@ -1,0 +1,98 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { CohortEnrollmentManager } from "@/components/portal/CohortEnrollmentManager";
+import {
+  DefinitionList,
+  EmptyState,
+  PageHeader,
+  SectionHeading,
+  Sheet,
+  StatusMark,
+} from "@/components/design-system/PortalPrimitives";
+import type {
+  Cohort,
+  CohortEnrollment,
+  Contract,
+  Learner,
+  Lesson,
+  Organization,
+  Person,
+} from "@/lib/api/domain-contracts";
+import { apiLabel, formatDateTime, formatPeriod } from "@/lib/api/format";
+import { serverApiAll, serverApiGetOrNull } from "@/lib/api/server";
+import { requireCapability } from "@/lib/auth/session";
+
+const weekdays = ["—", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+export default async function CohortDetailPage({
+  params,
+}: {
+  params: Promise<{ cohortId: string }>;
+}) {
+  const [, { cohortId }] = await Promise.all([
+    requireCapability("cohorts:read"),
+    params,
+  ]);
+  const cohort = await serverApiGetOrNull<Cohort>(
+    `/api/cohorts/${encodeURIComponent(cohortId)}`,
+  );
+  if (!cohort) notFound();
+
+  const [allEnrollments, contracts, learners, people, organizations, allLessons] =
+    await Promise.all([
+      serverApiAll<CohortEnrollment>("/api/cohort-enrollments"),
+      serverApiAll<Contract>("/api/contracts"),
+      serverApiAll<Learner>("/api/learners"),
+      serverApiAll<Person>("/api/people"),
+      serverApiAll<Organization>("/api/organizations"),
+      serverApiAll<Lesson>("/api/lessons"),
+    ]);
+  const enrollments = allEnrollments.filter((item) => item.cohortId === cohort.id);
+  const lessons = allLessons
+    .filter((lesson) => lesson.cohortId === cohort.id)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const personMap = new Map(people.map((person) => [person.id, person.fullName]));
+  const learnerMap = new Map(learners.map((learner) => [learner.id, learner]));
+  const organizationMap = new Map(
+    organizations.map((organization) => [organization.id, organization.tradeName || organization.legalName]),
+  );
+  const contractOptions = contracts.map((contract) => {
+    const learner = learnerMap.get(contract.learnerId);
+    const name = learner ? personMap.get(learner.personId) || learner.registrationNumber : contract.learnerId;
+    return {
+      contract,
+      label: `${name} · ${organizationMap.get(contract.employerId) ?? contract.employerId}`,
+    };
+  });
+
+  return (
+    <>
+      <PageHeader
+        eyebrow={cohort.code}
+        title={cohort.name}
+        description={`${weekdays[cohort.defaultWeekday] ?? cohort.defaultWeekday} · ${cohort.shiftCode} · ${formatPeriod(cohort.startDate, cohort.endDate)}`}
+        backHref="/sistema/turmas"
+        backLabel="Voltar para turmas"
+        action={<StatusMark>{apiLabel(cohort.status)}</StatusMark>}
+      />
+      <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+        <Sheet>
+          <SectionHeading title="Informações da turma" icon="layers" />
+          <DefinitionList columns={1} items={[
+            { label: "Código", value: cohort.code, mono: true },
+            { label: "Nome", value: cohort.name },
+            { label: "Agenda padrão", value: `${weekdays[cohort.defaultWeekday] ?? cohort.defaultWeekday} · ${cohort.shiftCode}` },
+            { label: "Período", value: formatPeriod(cohort.startDate, cohort.endDate) },
+            { label: "Matrículas", value: String(enrollments.length) },
+            { label: "Situação", value: <StatusMark>{apiLabel(cohort.status)}</StatusMark> },
+          ]} />
+        </Sheet>
+        <Sheet>
+          <SectionHeading title="Aulas" icon="calendar" action={<Link href="/sistema/agenda" className="text-xs font-semibold text-[var(--inat-teal-dark)]">Abrir agenda</Link>} />
+          {lessons.length ? <div className="divide-y divide-[var(--inat-line)]">{lessons.slice(0, 6).map((lesson) => <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="grid gap-2 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"><div><p className="text-sm font-semibold">{lesson.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)} · {apiLabel(lesson.deliveryMode)}</p></div><StatusMark>{apiLabel(lesson.status)}</StatusMark></Link>)}</div> : <EmptyState title="Nenhuma aula planejada" description="Esta turma ainda não possui aulas no backend." icon="calendar" />}
+        </Sheet>
+      </div>
+      <div className="mt-5"><CohortEnrollmentManager cohortId={cohort.id} enrollments={enrollments} contractOptions={contractOptions} /></div>
+    </>
+  );
+}

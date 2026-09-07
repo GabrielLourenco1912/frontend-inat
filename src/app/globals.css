@@ -3,6 +3,15 @@
 :root {
   --background: #f8faf9;
   --foreground: #203436;
+  --inat-ink: #203436;
+  --inat-teal: #088285;
+  --inat-teal-dark: #066c6f;
+  --inat-clay: #d16b36;
+  --inat-clay-dark: #a94f24;
+  --inat-paper: #f8faf9;
+  --inat-mist: #eaf3f1;
+  --inat-line: #dbe7e4;
+  --inat-line-strong: #bdceca;
   --inat-primary: #203436;
   --inat-secondary: #088285;
   --inat-cta: #d16b36;
@@ -45,16 +54,23 @@ a {
   text-decoration: none;
 }
 
+:focus-visible {
+  outline: 3px solid rgba(8, 130, 133, 0.35);
+  outline-offset: 3px;
+}
+
 ::selection {
   background: #f3c7ad;
   color: var(--inat-primary);
 }
 
+@layer components {
 .section-eyebrow {
-  color: var(--inat-secondary);
-  font-size: 0.875rem;
+  color: var(--inat-teal-dark);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
@@ -67,14 +83,14 @@ a {
   color: var(--inat-muted);
 }
 
-.btn-base {
+:where(.btn-base) {
   align-items: center;
   border-radius: 4px;
   display: inline-flex;
   font-size: 0.875rem;
   font-weight: 700;
   justify-content: center;
-  min-height: 3rem;
+  min-height: 2.875rem;
   padding: 0.75rem 1.5rem;
   transition:
     background-color 160ms ease,
@@ -88,7 +104,7 @@ a {
 }
 
 .btn-primary {
-  background: var(--inat-primary);
+  background: var(--inat-ink);
   color: #ffffff;
   box-shadow: 0 14px 30px -20px rgba(32, 52, 54, 0.8);
 }
@@ -98,7 +114,7 @@ a {
 }
 
 .btn-cta {
-  background: var(--inat-cta);
+  background: var(--inat-clay);
   color: #ffffff;
   box-shadow: 0 14px 30px -20px rgba(209, 107, 54, 0.8);
 }
@@ -121,9 +137,8 @@ a {
 .card-simple {
   background: #ffffff;
   border-radius: 8px;
-  box-shadow:
-    0 24px 70px -46px rgba(32, 52, 54, 0.72),
-    inset 0 0 0 1px rgba(32, 52, 54, 0.07);
+  border: 1px solid var(--inat-line);
+  box-shadow: 0 20px 55px -44px rgba(32, 52, 54, 0.55);
 }
 
 .card-muted {
@@ -146,6 +161,109 @@ a {
 .field:focus {
   border-color: var(--inat-secondary);
   box-shadow: 0 0 0 4px rgba(8, 130, 133, 0.12);
+}
+
+.portal-button {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.9rem;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.portal-button-primary {
+  background: var(--inat-ink);
+  color: #ffffff;
+}
+
+.portal-button-primary:hover {
+  background: #142729;
+}
+
+.portal-button-clay {
+  background: var(--inat-clay);
+  color: #ffffff;
+}
+
+.portal-button-clay:hover {
+  background: var(--inat-clay-dark);
+}
+
+.portal-button-secondary {
+  background: #ffffff;
+  border-color: var(--inat-line-strong);
+  color: var(--inat-ink);
+}
+
+.portal-button-secondary:hover {
+  border-color: var(--inat-teal);
+  color: var(--inat-teal-dark);
+}
+
+.portal-button-quiet {
+  background: transparent;
+  color: var(--inat-muted);
+}
+
+.portal-button-quiet:hover {
+  background: var(--inat-mist);
+  color: var(--inat-ink);
+}
+
+.portal-field {
+  border: 1px solid var(--inat-line-strong);
+  border-radius: 4px;
+  color: var(--inat-ink);
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.portal-field::placeholder {
+  color: #8a9694;
+}
+
+.portal-field:focus {
+  border-color: var(--inat-teal);
+  box-shadow: 0 0 0 3px rgba(8, 130, 133, 0.1);
+}
+
+.portal-label {
+  color: var(--inat-ink);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.portal-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-width: thin;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.auth-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
 }
 
 select.field option {

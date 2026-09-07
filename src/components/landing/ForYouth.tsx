@@ -1,57 +1,39 @@
-const benefits = [
-  "Primeiro contato com o mercado de trabalho",
-  "Desenvolvimento profissional",
-  "Orientação e acompanhamento",
-  "Construção de currículo",
-  "Aprendizado prático e teórico",
+import { Icon } from "@/components/design-system/Icon";
+
+const steps = [
+  "Conheça as possibilidades da aprendizagem profissional",
+  "Converse com nossa equipe sobre o seu momento",
+  "Prepare-se para oportunidades com orientação",
+  "Siga acompanhado durante a experiência profissional",
 ];
 
 export function ForYouth() {
   return (
-    <section className="bg-white py-20 sm:py-24">
-      <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-        <div className="scroll-reveal" data-reveal="left">
-          <p className="section-eyebrow">Para jovens e famílias</p>
-          <h2 className="section-title mt-3 text-3xl font-bold sm:text-4xl">
-            Apoio para começar com orientação e segurança
+    <section id="jovens" className="scroll-mt-24 bg-white py-20 sm:py-28">
+      <div className="mx-auto grid w-full max-w-[90rem] gap-10 px-4 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch lg:px-8">
+        <div className="scroll-reveal relative overflow-hidden bg-[var(--inat-teal)] p-7 text-white sm:p-10 lg:p-12" data-reveal="left">
+          <div className="absolute -bottom-32 -right-28 size-80 rounded-full border border-white/15" />
+          <div className="absolute -bottom-16 -right-12 size-52 rounded-full border border-white/20" />
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-white/65">Para jovens e famílias</p>
+          <h2 className="mt-5 max-w-2xl text-balance text-4xl font-semibold leading-[1.06] tracking-[-0.04em] sm:text-5xl">
+            Começar não precisa ser um passo solitário.
           </h2>
-          <p className="section-copy mt-6 text-lg leading-8">
-            A aprendizagem profissional aproxima jovens interessados e seus
-            responsáveis de oportunidades reais, com acompanhamento para
-            desenvolver postura, confiança e competências para o futuro.
+          <p className="mt-6 max-w-xl text-base leading-8 text-white/75">
+            O INAT ajuda a transformar dúvidas em preparação, e preparação em
+            oportunidades reais — respeitando o tempo e a história de cada jovem.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a
-              href="#contato"
-              className="btn-base btn-primary"
-            >
-              Quero saber mais
-            </a>
-            <a
-              href="#contato"
-              className="btn-base btn-secondary"
-            >
-              Entrar em contato
-            </a>
-          </div>
+          <a href="#contato" className="btn-base mt-9 gap-2 bg-white text-[var(--inat-teal-dark)] hover:bg-[var(--inat-paper)]">
+            Quero conhecer o programa
+            <Icon name="arrow-right" className="size-4" />
+          </a>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {benefits.map((benefit, index) => (
-            <article
-              key={benefit}
-              className="card-muted scroll-reveal p-5"
-              data-reveal={index % 2 === 0 ? "right" : "left"}
-            >
-              <span className="mb-4 block size-3 rounded-full bg-[var(--inat-secondary)]" />
-              <h3 className="text-base font-semibold text-[var(--inat-primary)]">
-                {benefit}
-              </h3>
-              <p className="section-copy mt-2 text-sm leading-6">
-                Benefício estruturado para apoiar a transição entre estudo,
-                formação e prática profissional.
-              </p>
-            </article>
+        <div className="scroll-reveal flex flex-col justify-center border-y border-[var(--inat-line)] py-2" data-reveal="right">
+          {steps.map((step, index) => (
+            <div key={step} className="grid grid-cols-[2.5rem_1fr] gap-4 border-b border-[var(--inat-line)] py-6 last:border-b-0 sm:px-4">
+              <span className="font-mono text-xs font-bold text-[var(--inat-clay)]">{String(index + 1).padStart(2, "0")}</span>
+              <div><h3 className="font-semibold leading-6 text-[var(--inat-ink)]">{step}</h3><p className="section-copy mt-2 text-sm leading-6">Orientação clara para que o próximo passo faça sentido.</p></div>
+            </div>
           ))}
         </div>
       </div>

@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: "../../node_modules/next/dist/next-devtools/server/font/geist-latin.woff2",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  display: "swap",
+  weight: "100 900",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "../../node_modules/next/dist/next-devtools/server/font/geist-mono-latin.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {
-  title: "INAT",
+  title: "INAT Paranaguá | Aprendizagem que abre caminhos",
   description:
-    "Landing page institucional do INAT Paranaguá, voltada à aprendizagem profissional, jovens aprendizes, empresas parceiras e contato institucional.",
+    "Formação profissional, acompanhamento de jovens e conexão responsável com empresas parceiras em Paranaguá.",
   icons: {
     icon: [
       {
@@ -37,6 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-[var(--inat-bg)] text-[var(--inat-primary)]">

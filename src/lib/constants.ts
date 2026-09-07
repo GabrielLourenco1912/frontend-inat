@@ -7,10 +7,10 @@ export const INSTITUTION_ADDRESS =
 const configuredInternalSystemUrl =
   process.env.NEXT_PUBLIC_INTERNAL_SYSTEM_URL?.trim();
 
-// TODO: Configure NEXT_PUBLIC_INTERNAL_SYSTEM_URL in the deployment environment.
-export const INTERNAL_SYSTEM_URL = configuredInternalSystemUrl || "#";
+// A implantação pode sobrescrever o destino caso o portal use outro host.
+export const INTERNAL_SYSTEM_URL = configuredInternalSystemUrl || "/entrar";
 export const INTERNAL_SYSTEM_NAV_URL =
-  configuredInternalSystemUrl || "#sistema-interno";
+  configuredInternalSystemUrl || "/entrar";
 
 export const CONTACT_INFO = {
   phone: "Telefone/WhatsApp a confirmar",
@@ -35,12 +35,11 @@ export const SOCIAL_LINKS = [
 
 export const NAV_ITEMS = [
   { label: "Início", href: "#inicio" },
-  { label: "Sobre", href: "#sobre" },
-  { label: "Aprendizagem", href: "#aprendizagem" },
+  { label: "O INAT", href: "#sobre" },
+  { label: "Programa", href: "#aprendizagem" },
+  { label: "Para jovens", href: "#jovens" },
   { label: "Empresas", href: "#empresas" },
   { label: "Impacto", href: "#impacto" },
-  { label: "Redes Sociais", href: "#redes-sociais" },
-  { label: "Sistema Interno", href: "#sistema-interno" },
   { label: "Contato", href: "#contato" },
 ];
 
