@@ -19,6 +19,7 @@ export type Lesson = {
   instructor: string;
   modality: "Presencial" | "Online";
   place: string;
+  externalLessonUrl?: string;
   state: "Agendada" | "Em andamento" | "Concluída" | "Cancelada";
   attendance: "Pendente" | "Em preenchimento" | "Concluída";
 };
@@ -66,6 +67,7 @@ export const lessons: Lesson[] = [
     instructor: "Carolina Mendes",
     modality: "Online",
     place: "Google Meet",
+    externalLessonUrl: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
     state: "Agendada",
     attendance: "Pendente",
   },

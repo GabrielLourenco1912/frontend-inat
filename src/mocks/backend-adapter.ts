@@ -359,6 +359,7 @@ export const lessons: Lesson[] = portalLessons.map((lesson) => {
     deliveryMode: online ? "ONLINE" : "ONSITE",
     room: online ? null : lesson.place,
     meetingUrl: online ? `https://meet.google.com/${slug(lesson.id)}` : null,
+    externalLessonUrl: lesson.externalLessonUrl ?? null,
     status: lessonStatuses[lesson.state],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,

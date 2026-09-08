@@ -166,7 +166,7 @@ Downloads passam pela rota contextual `.../content`. O BFF preserva `Content-Typ
 
 ## 8. Aulas, presença e atividades
 
-As modalidades aceitas são apenas `ONLINE` e `ONSITE`. A criação/edição não oferece híbrida.
+As modalidades aceitas são apenas `ONLINE` e `ONSITE`. A criação/edição não oferece híbrida. O campo opcional `externalLessonUrl` aceita somente `http://` ou `https://` e pode apontar para YouTube, Vimeo, Dailymotion, um arquivo de vídeo ou outro host público incorporável. Quando existe e o navegador consegue renderizá-lo, a página de detalhe mostra o player; URL ausente, inválida ou com erro de carregamento mantém a página sem player.
 
 Conflitos de horário e consistência entre turma, instrutor e participantes são validados pelo backend. A chamada grava cada `AttendanceRecord` usando a participação da aula.
 
