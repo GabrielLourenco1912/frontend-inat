@@ -158,5 +158,153 @@ export function ContractCreator({ learners, people, organizations }: { learners:
 
 export function LessonCreator({ cohorts, people }: { cohorts: Cohort[]; people: Person[] }) {
   const router = useRouter();
-  return <CreatorModal title="Planejar aula" trigger="Nova aula" disabled={!cohorts.length || !people.length}>{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/lessons" successLabel="Criar aula" build={(form) => ({ cohortId: String(form.get("cohortId")), instructorPersonId: String(form.get("instructorPersonId")), title: String(form.get("title") ?? "").trim(), startsAt: new Date(String(form.get("startsAt"))).toISOString(), endsAt: new Date(String(form.get("endsAt"))).toISOString(), deliveryMode: String(form.get("deliveryMode")), room: String(form.get("room") ?? "").trim() || null, meetingUrl: String(form.get("meetingUrl") ?? "").trim() || null, status: String(form.get("status")) as LessonStatus })}><div className="grid gap-4 sm:grid-cols-2"><label className="sm:col-span-2"><span className="portal-label">Título</span><input name="title" maxLength={160} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Turma</span><select name="cohortId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{cohorts.map((cohort) => <option key={cohort.id} value={cohort.id}>{cohort.code} · {cohort.name}</option>)}</select></label><label><span className="portal-label">Instrutor (pessoa)</span><select name="instructorPersonId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{people.map((person) => <option key={person.id} value={person.id}>{person.fullName}</option>)}</select></label><label><span className="portal-label">Início</span><input name="startsAt" type="datetime-local" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término</span><input name="endsAt" type="datetime-local" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Modalidade</span><select name="deliveryMode" defaultValue="ONSITE" className="portal-field mt-2 h-10 w-full px-3"><option value="ONSITE">Presencial</option><option value="ONLINE">Online</option></select></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="SCHEDULED" className="portal-field mt-2 h-10 w-full px-3"><option value="SCHEDULED">Agendada</option><option value="IN_PROGRESS">Em andamento</option><option value="COMPLETED">Concluída</option><option value="CANCELLED">Cancelada</option></select></label><label><span className="portal-label">Sala (presencial)</span><input name="room" maxLength={80} className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Link (online)</span><input name="meetingUrl" type="url" maxLength={512} className="portal-field mt-2 h-10 w-full px-3" /></label></div></RequestForm>}</CreatorModal>;
+  return (
+    <CreatorModal
+      title="Planejar aula"
+      trigger="Nova aula"
+      disabled={!cohorts.length || !people.length}
+    >
+      {(close) => (
+        <RequestForm
+          close={close}
+          success={() => router.refresh()}
+          endpoint="/api/backend/lessons"
+          successLabel="Criar aula"
+          build={(form) => ({
+            cohortId: String(form.get("cohortId")),
+            instructorPersonId: String(form.get("instructorPersonId")),
+            title: String(form.get("title") ?? "").trim(),
+            startsAt: new Date(String(form.get("startsAt"))).toISOString(),
+            endsAt: new Date(String(form.get("endsAt"))).toISOString(),
+            deliveryMode: String(form.get("deliveryMode")),
+            room: String(form.get("room") ?? "").trim() || null,
+            meetingUrl: String(form.get("meetingUrl") ?? "").trim() || null,
+            externalLessonUrl:
+              String(form.get("externalLessonUrl") ?? "").trim() || null,
+            status: String(form.get("status")) as LessonStatus,
+          })}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="sm:col-span-2">
+              <span className="portal-label">Título</span>
+              <input
+                name="title"
+                maxLength={160}
+                className="portal-field mt-2 h-10 w-full px-3"
+                required
+              />
+            </label>
+            <label>
+              <span className="portal-label">Turma</span>
+              <select
+                name="cohortId"
+                defaultValue=""
+                className="portal-field mt-2 h-10 w-full px-3"
+                required
+              >
+                <option value="" disabled>Selecione</option>
+                {cohorts.map((cohort) => (
+                  <option key={cohort.id} value={cohort.id}>
+                    {cohort.code} · {cohort.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="portal-label">Instrutor (pessoa)</span>
+              <select
+                name="instructorPersonId"
+                defaultValue=""
+                className="portal-field mt-2 h-10 w-full px-3"
+                required
+              >
+                <option value="" disabled>Selecione</option>
+                {people.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="portal-label">Início</span>
+              <input
+                name="startsAt"
+                type="datetime-local"
+                className="portal-field mt-2 h-10 w-full px-3"
+                required
+              />
+            </label>
+            <label>
+              <span className="portal-label">Término</span>
+              <input
+                name="endsAt"
+                type="datetime-local"
+                className="portal-field mt-2 h-10 w-full px-3"
+                required
+              />
+            </label>
+            <label>
+              <span className="portal-label">Modalidade</span>
+              <select
+                name="deliveryMode"
+                defaultValue="ONSITE"
+                className="portal-field mt-2 h-10 w-full px-3"
+              >
+                <option value="ONSITE">Presencial</option>
+                <option value="ONLINE">Online</option>
+              </select>
+            </label>
+            <label>
+              <span className="portal-label">Situação</span>
+              <select
+                name="status"
+                defaultValue="SCHEDULED"
+                className="portal-field mt-2 h-10 w-full px-3"
+              >
+                <option value="SCHEDULED">Agendada</option>
+                <option value="IN_PROGRESS">Em andamento</option>
+                <option value="COMPLETED">Concluída</option>
+                <option value="CANCELLED">Cancelada</option>
+              </select>
+            </label>
+            <label>
+              <span className="portal-label">Sala (presencial)</span>
+              <input
+                name="room"
+                maxLength={80}
+                className="portal-field mt-2 h-10 w-full px-3"
+              />
+            </label>
+            <label>
+              <span className="portal-label">Link (online)</span>
+              <input
+                name="meetingUrl"
+                type="url"
+                maxLength={512}
+                className="portal-field mt-2 h-10 w-full px-3"
+              />
+            </label>
+            <label className="sm:col-span-2">
+              <span className="portal-label">
+                URL da aula externa (opcional)
+              </span>
+              <input
+                name="externalLessonUrl"
+                type="url"
+                pattern="https?://.+"
+                title="Use uma URL iniciada por http:// ou https://"
+                maxLength={2048}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="portal-field mt-2 h-10 w-full px-3"
+              />
+              <span className="mt-1.5 block text-xs text-[var(--inat-muted)]">
+                YouTube, Vimeo, Dailymotion, arquivo de vídeo ou outro player público.
+              </span>
+            </label>
+          </div>
+        </RequestForm>
+      )}
+    </CreatorModal>
+  );
 }

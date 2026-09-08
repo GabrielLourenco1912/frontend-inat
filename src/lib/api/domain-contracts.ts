@@ -141,6 +141,7 @@ export type Lesson = {
   deliveryMode: DeliveryMode;
   room: string | null;
   meetingUrl: string | null;
+  externalLessonUrl: string | null;
   status: LessonStatus;
   createdAt: string;
   updatedAt: string;

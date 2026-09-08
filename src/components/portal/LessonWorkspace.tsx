@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
+import { ExternalLessonPlayer } from "@/components/portal/ExternalLessonPlayer";
 import {
   DefinitionList,
   EmptyState,
@@ -551,6 +552,7 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
     const endsAt = new Date(String(form.get("endsAt")));
     const room = String(form.get("room") ?? "").trim();
     const meetingUrl = String(form.get("meetingUrl") ?? "").trim();
+    const externalLessonUrl = String(form.get("externalLessonUrl") ?? "").trim();
 
     if (
       Number.isNaN(startsAt.getTime()) ||
@@ -592,6 +594,7 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
           deliveryMode,
           room: room || null,
           meetingUrl: meetingUrl || null,
+          externalLessonUrl: externalLessonUrl || null,
           status,
         },
       );
@@ -781,6 +784,24 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
                   className="portal-field mt-2 h-10 w-full px-3 disabled:bg-[var(--inat-paper)]"
                 />
               </label>
+              <label className="sm:col-span-2">
+                <span className="portal-label">
+                  URL da aula externa (opcional)
+                </span>
+                <input
+                  name="externalLessonUrl"
+                  type="url"
+                  pattern="https?://.+"
+                  title="Use uma URL iniciada por http:// ou https://"
+                  defaultValue={lesson.externalLessonUrl ?? ""}
+                  maxLength={2048}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="portal-field mt-2 h-10 w-full px-3"
+                />
+                <span className="mt-1.5 block text-xs text-[var(--inat-muted)]">
+                  YouTube, Vimeo, Dailymotion, arquivo de vídeo ou outro player público.
+                </span>
+              </label>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -921,52 +942,58 @@ export function LessonWorkspace({
       </div>
 
       {tab === "resumo" ? (
-        <div className="grid gap-5 xl:grid-cols-2">
-          <Sheet>
-            <SectionHeading title="Informações da aula" icon="book" />
-            <DefinitionList
-              columns={2}
-              items={[
-                { label: "Início", value: formatDateTime(lesson.startsAt) },
-                { label: "Término", value: formatDateTime(lesson.endsAt) },
-                { label: "Modalidade", value: apiLabel(lesson.deliveryMode) },
-                {
-                  label: "Local",
-                  value:
-                    lesson.deliveryMode === "ONLINE"
-                      ? lesson.meetingUrl || "Sem link"
-                      : lesson.room || "Sem sala",
-                },
-                { label: "Turma", value: lesson.cohortId, mono: true },
-                {
-                  label: "Instrutor",
-                  value: lesson.instructorPersonId,
-                  mono: true,
-                },
-              ]}
-            />
-          </Sheet>
-          <Sheet>
-            <SectionHeading title="Estado operacional" icon="activity" />
-            <DefinitionList
-              columns={1}
-              items={[
-                {
-                  label: "Participantes carregados",
-                  value: String(participants.length),
-                },
-                {
-                  label: "Presenças registradas",
-                  value: String(attendance.length),
-                },
-                {
-                  label: "Atividades vinculadas",
-                  value: String(activities.length),
-                },
-              ]}
-            />
-          </Sheet>
-        </div>
+        <>
+          <ExternalLessonPlayer
+            url={lesson.externalLessonUrl}
+            title={`Aula externa: ${lesson.title}`}
+          />
+          <div className="grid gap-5 xl:grid-cols-2">
+            <Sheet>
+              <SectionHeading title="Informações da aula" icon="book" />
+              <DefinitionList
+                columns={2}
+                items={[
+                  { label: "Início", value: formatDateTime(lesson.startsAt) },
+                  { label: "Término", value: formatDateTime(lesson.endsAt) },
+                  { label: "Modalidade", value: apiLabel(lesson.deliveryMode) },
+                  {
+                    label: "Local",
+                    value:
+                      lesson.deliveryMode === "ONLINE"
+                        ? lesson.meetingUrl || "Sem link"
+                        : lesson.room || "Sem sala",
+                  },
+                  { label: "Turma", value: lesson.cohortId, mono: true },
+                  {
+                    label: "Instrutor",
+                    value: lesson.instructorPersonId,
+                    mono: true,
+                  },
+                ]}
+              />
+            </Sheet>
+            <Sheet>
+              <SectionHeading title="Estado operacional" icon="activity" />
+              <DefinitionList
+                columns={1}
+                items={[
+                  {
+                    label: "Participantes carregados",
+                    value: String(participants.length),
+                  },
+                  {
+                    label: "Presenças registradas",
+                    value: String(attendance.length),
+                  },
+                  {
+                    label: "Atividades vinculadas",
+                    value: String(activities.length),
+                  },
+                ]}
+              />
+            </Sheet>
+          </div>
+        </>
       ) : null}
 
       {tab === "participantes" && canManage ? (
