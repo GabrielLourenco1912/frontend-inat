@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { Icon } from "@/components/design-system/Icon";
 import {
   INSTITUTION_NAME,
   INTERNAL_SYSTEM_NAV_URL,
@@ -11,92 +12,61 @@ import {
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const closeMenu = () => setIsOpen(false);
-
   return (
-    <header className="sticky top-0 z-50 bg-white/95 shadow-[0_10px_30px_-26px_rgba(32,52,54,0.65)] backdrop-blur-md">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-24 items-center justify-between gap-6">
-          <a
-            href="#inicio"
-            className="flex items-center gap-3 font-semibold text-[var(--inat-primary)]"
-            aria-label="Ir para o início"
-            onClick={closeMenu}
-          >
-            <Image
-              src="/brand/inat-logo-header.png"
-              alt={INSTITUTION_NAME}
-              width={260}
-              height={72}
-              priority
-              className="h-16 w-auto sm:h-[4.5rem]"
-            />
-          </a>
+    <header className="sticky top-0 z-50 border-b border-[var(--inat-line)] bg-white/96 backdrop-blur-md">
+      <div className="mx-auto flex h-[4.75rem] w-full max-w-[90rem] items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <a href="#inicio" aria-label="Ir para o início" onClick={() => setIsOpen(false)} className="shrink-0">
+          <Image
+            src="/brand/inat-logo-header.png"
+            alt={INSTITUTION_NAME}
+            width={1000}
+            height={250}
+            priority
+            className="h-auto w-[11.75rem] sm:w-[13rem]"
+          />
+        </a>
 
-          <div className="hidden lg:block">
-            <a href={INTERNAL_SYSTEM_NAV_URL} className="btn-base btn-cta">
-              Acessar Sistema
+        <nav className="ml-auto hidden items-center gap-0.5 xl:flex" aria-label="Principal">
+          {NAV_ITEMS.slice(1).map((item) => (
+            <a key={item.href} href={item.href} className="px-3 py-2 text-[0.8125rem] font-semibold text-[var(--inat-muted)] transition hover:bg-[var(--inat-mist)] hover:text-[var(--inat-ink)]">
+              {item.label}
             </a>
-          </div>
+          ))}
+        </nav>
 
-          <button
-            type="button"
-            className="inline-flex size-11 items-center justify-center rounded bg-[var(--inat-bg)] text-[var(--inat-primary)] lg:hidden"
-            aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
-            aria-controls="mobile-navigation"
-            aria-expanded={isOpen}
-            onClick={() => setIsOpen((current) => !current)}
-          >
-            <span className="flex flex-col gap-1.5" aria-hidden="true">
-              <span className="h-0.5 w-5 rounded-full bg-current" />
-              <span className="h-0.5 w-5 rounded-full bg-current" />
-              <span className="h-0.5 w-5 rounded-full bg-current" />
-            </span>
-          </button>
-        </div>
+        <a href={INTERNAL_SYSTEM_NAV_URL} className="btn-base btn-cta ml-auto hidden gap-2 sm:inline-flex xl:ml-3">
+          Acessar portal
+          <Icon name="arrow-right" className="size-4" />
+        </a>
 
-        <nav
-          className="hidden flex-wrap justify-center gap-x-3 gap-y-2 border-t border-[var(--inat-line)] py-4 lg:flex"
-          aria-label="Principal"
+        <button
+          type="button"
+          onClick={() => setIsOpen((value) => !value)}
+          className="ml-auto grid size-11 place-items-center bg-[var(--inat-mist)] text-[var(--inat-ink)] sm:ml-0 xl:hidden"
+          aria-label={isOpen ? "Fechar navegação" : "Abrir navegação"}
+          aria-expanded={isOpen}
+          aria-controls="landing-navigation"
         >
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="whitespace-nowrap rounded px-4 py-2 text-sm font-semibold text-[var(--inat-muted)] transition hover:bg-[var(--inat-bg)] hover:text-[var(--inat-primary)]"
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
+          <Icon name={isOpen ? "close" : "menu"} className="size-5" />
+        </button>
       </div>
 
-      <div
-        id="mobile-navigation"
-        className={`bg-white px-4 pb-4 shadow-[0_18px_30px_-24px_rgba(32,52,54,0.55)] lg:hidden ${
-          isOpen ? "block" : "hidden"
-        }`}
-      >
-        <nav className="mx-auto grid max-w-7xl gap-2" aria-label="Mobile">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="rounded-lg px-4 py-3 text-sm font-semibold text-[var(--inat-muted)] hover:bg-[var(--inat-bg)] hover:text-[var(--inat-primary)]"
-              onClick={closeMenu}
-            >
-              {item.label}
+      {isOpen ? (
+        <div id="landing-navigation" className="border-t border-[var(--inat-line)] bg-white px-4 py-4 shadow-[0_20px_35px_-28px_rgba(32,52,54,.45)] xl:hidden">
+          <nav className="mx-auto grid max-w-[90rem] gap-1" aria-label="Navegação mobile">
+            {NAV_ITEMS.map((item) => (
+              <a key={item.href} href={item.href} onClick={() => setIsOpen(false)} className="flex min-h-11 items-center justify-between border-b border-[var(--inat-line)] px-2 text-sm font-semibold text-[var(--inat-ink)] last:border-b-0">
+                {item.label}
+                <Icon name="arrow-right" className="size-4 text-[var(--inat-muted)]" />
+              </a>
+            ))}
+            <a href={INTERNAL_SYSTEM_NAV_URL} onClick={() => setIsOpen(false)} className="btn-base btn-cta mt-3 gap-2 sm:hidden">
+              Acessar portal
+              <Icon name="arrow-right" className="size-4" />
             </a>
-          ))}
-          <a
-            href={INTERNAL_SYSTEM_NAV_URL}
-            className="btn-base btn-cta mt-2"
-            onClick={closeMenu}
-          >
-            Acessar Sistema
-          </a>
-        </nav>
-      </div>
+          </nav>
+        </div>
+      ) : null}
     </header>
   );
 }

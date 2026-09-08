@@ -11,7 +11,6 @@ import { InternalSystem } from "@/components/landing/InternalSystem";
 import { Location } from "@/components/landing/Location";
 import { ScrollAnimations } from "@/components/landing/ScrollAnimations";
 import { SocialMedia } from "@/components/landing/SocialMedia";
-import { Testimonials } from "@/components/landing/Testimonials";
 
 export default function Home() {
   return (
@@ -25,9 +24,8 @@ export default function Home() {
         <ForYouth />
         <ForCompanies />
         <Impact />
-        <Testimonials />
-        <SocialMedia />
         <InternalSystem />
+        <SocialMedia />
         <Contact />
         <Location />
       </main>
