@@ -42,6 +42,7 @@ export type Actor = {
   roles: Role[];
   organizationIds: string[];
   roleLabel: string;
+  isActive: boolean;
   status: "Ativo" | "Convidado" | "Bloqueado" | "Desativado";
   lastAccess: string;
 };
@@ -96,9 +97,10 @@ const roleCapabilities: Record<Role, Capability[]> = {
 };
 
 export function can(actor: Actor, capability: Capability) {
-  return actor.roles.some((role) => roleCapabilities[role]?.includes(capability));
+  return actor.isActive
+    && actor.roles.some((role) => roleCapabilities[role]?.includes(capability));
 }
 
 export function hasRole(actor: Actor, role: Role) {
-  return actor.roles.includes(role);
+  return actor.isActive && actor.roles.includes(role);
 }

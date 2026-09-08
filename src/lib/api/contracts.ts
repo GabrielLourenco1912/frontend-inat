@@ -53,6 +53,7 @@ export type UserResponse = {
   status: UserAccountStatus;
   roles: Role[] | string[];
   emailVerifiedAt: string | null;
+  lockedUntil: string | null;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;

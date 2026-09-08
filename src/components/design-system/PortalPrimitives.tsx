@@ -15,6 +15,14 @@ const toneClasses: Record<StatusTone, string> = {
 export function statusTone(label: string): StatusTone {
   const value = label.toLocaleLowerCase("pt-BR");
   if (
+    value.includes("inativo") ||
+    value.includes("inativa") ||
+    value.includes("desativ") ||
+    value.includes("bloque")
+  ) {
+    return "danger";
+  }
+  if (
     value.includes("ativo") ||
     value.includes("ativa") ||
     value.includes("presente") ||

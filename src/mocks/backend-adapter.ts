@@ -668,6 +668,7 @@ export const users: UserResponse[] = portalUsers.map((user) => ({
   status: user.state === "Ativo" ? "ACTIVE" : "INVITED",
   roles: userRoles(user.roles),
   emailVerifiedAt: user.state === "Ativo" ? CREATED_AT : null,
+  lockedUntil: null,
   lastLoginAt: user.lastAccess === "Primeiro acesso" ? null : UPDATED_AT,
   createdAt: CREATED_AT,
   updatedAt: UPDATED_AT,
@@ -725,6 +726,7 @@ export const mockActor: Actor = {
   roles: ["ADMIN"],
   organizationIds: [],
   roleLabel: "Administrador",
+  isActive: true,
   status: "Ativo",
   lastAccess: "Hoje, 07:42",
 };

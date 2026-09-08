@@ -5,7 +5,7 @@ import { can, type Capability } from "@/domain/auth";
 import { mockActor } from "@/mocks/backend-adapter";
 
 export async function getCurrentActor() {
-  return mockActor;
+  return mockActor.isActive ? mockActor : null;
 }
 
 export async function requireActor() {
