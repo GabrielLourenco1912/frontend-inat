@@ -28,6 +28,9 @@ export default async function CommunicationsPage() {
     );
     const channels = [...new Set(deliveries.map((recipient) => apiLabel(recipient.channel)))];
     const failed = deliveries.filter((recipient) => recipient.deliveryStatus === "FAILED").length;
+    const cancelled = deliveries.filter(
+      (recipient) => recipient.deliveryStatus === "CANCELLED",
+    ).length;
     const delivered = deliveries.filter((recipient) =>
       ["SENT", "DELIVERED"].includes(recipient.deliveryStatus),
     ).length;
@@ -45,7 +48,11 @@ export default async function CommunicationsPage() {
       audience,
       channels: channels.join(" + ") || "—",
       scheduled: formatDateTime(notification.scheduledAt ?? notification.createdAt),
-      delivery: failed ? `${failed} falha(s)` : `${delivered}/${deliveries.length} processados`,
+      delivery: [
+        `${delivered}/${deliveries.length} processados`,
+        failed ? `${failed} falha(s)` : null,
+        cancelled ? `${cancelled} cancelado(s)` : null,
+      ].filter(Boolean).join(" · "),
       state: apiLabel(notification.priority),
     };
   });
@@ -58,7 +65,9 @@ export default async function CommunicationsPage() {
         description="Notificações internas e por e-mail, com público obrigatório e estado real de entrega."
         action={
           <NotificationComposer
-            users={users.map((user) => ({ id: user.id, label: user.displayName }))}
+            users={users
+              .filter((user) => user.status === "ACTIVE")
+              .map((user) => ({ id: user.id, label: user.displayName }))}
             cohorts={cohorts.map((cohort) => ({ id: cohort.id, label: `${cohort.code} · ${cohort.name}` }))}
           />
         }

@@ -14,7 +14,12 @@ export type DocumentVerificationStatus = "PENDING" | "VERIFIED" | "REJECTED" | "
 export type NotificationAudienceType = "USER" | "COHORT" | "ALL";
 export type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH";
 export type NotificationPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
-export type NotificationDeliveryStatus = "PENDING" | "SENT" | "DELIVERED" | "FAILED";
+export type NotificationDeliveryStatus =
+  | "PENDING"
+  | "SENT"
+  | "DELIVERED"
+  | "FAILED"
+  | "CANCELLED";
 
 export type Address = {
   id: string;

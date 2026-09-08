@@ -68,6 +68,7 @@ export function mapUserToActor(
     roles,
     organizationIds: context?.organizationIds ?? [],
     roleLabel: primaryRole ? roleLabels[primaryRole] : "Sem perfil de acesso",
+    isActive: user.status === "ACTIVE",
     status: statusLabels[user.status] ?? "Desativado",
     lastAccess: formatAccess(user.lastLoginAt),
   };

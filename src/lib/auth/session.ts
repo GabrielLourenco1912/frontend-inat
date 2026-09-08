@@ -27,9 +27,9 @@ const resolveActor = cache(async (accessToken: string) => {
   }
 
   const envelope = (await response.json()) as ApiResponse<CurrentUserContextResponse>;
-  return envelope.data
-    ? mapUserToActor(envelope.data.user, envelope.data)
-    : null;
+  if (!envelope.data) return null;
+  const actor = mapUserToActor(envelope.data.user, envelope.data);
+  return actor.isActive ? actor : null;
 });
 
 export async function getCurrentActor() {
