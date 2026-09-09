@@ -587,7 +587,7 @@ export const documents = [
     number: "DECL-2026-184",
     validity: "31 dez 2026",
     submittedAt: "Hoje, 08:12",
-    state: "Pendente",
+    state: "Verificado",
   },
   {
     id: "doc-02",
@@ -596,7 +596,7 @@ export const documents = [
     number: "—",
     validity: "Sem validade",
     submittedAt: "20 ago, 16:44",
-    state: "Pendente",
+    state: "Verificado",
   },
   {
     id: "doc-03",
@@ -614,7 +614,7 @@ export const documents = [
     number: "***.482.***-1",
     validity: "Sem validade",
     submittedAt: "18 ago, 15:10",
-    state: "Rejeitado",
+    state: "Verificado",
   },
   {
     id: "doc-05",
@@ -696,8 +696,8 @@ export const workQueue = [
   },
   {
     id: "work-03",
-    title: "Revisar documentos recebidos",
-    context: "2 pendentes e 1 rejeitado",
+    title: "Acompanhar documentos pessoais",
+    context: "1 expirado aguardando renovação",
     owner: "Camila Ribeiro",
     due: "Hoje",
     kind: "Documento",

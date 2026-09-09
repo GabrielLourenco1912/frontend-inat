@@ -150,6 +150,7 @@ for (const person of portalPeople) {
         : person.contact,
     birthDate: learner ? birthDates[learner.birthDate] ?? "2000-01-01" : "1985-01-01",
     gender: null,
+    status: person.state === "Ativa" ? "ACTIVE" : "INACTIVE",
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   });
@@ -167,6 +168,7 @@ for (const person of extraPersonSeeds) {
     phoneNumber: person.phone,
     birthDate: birthDates[person.birthDate] ?? "1990-01-01",
     gender: null,
+    status: "ACTIVE",
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   });
@@ -535,12 +537,13 @@ export const documentTypes: DocumentType[] = portalDocumentTypes.map((type, inde
   code: type.code,
   name: type.name,
   description: type.description,
+  scope: type.code === "ASO" ? "BOTH" : "PERSON",
 }));
 
 const documentStatuses: Record<string, PersonDocument["verificationStatus"]> = {
-  Pendente: "PENDING",
+  Pendente: "VERIFIED",
   Verificado: "VERIFIED",
-  Rejeitado: "REJECTED",
+  Rejeitado: "VERIFIED",
   Expirado: "EXPIRED",
 } as const;
 
@@ -552,6 +555,25 @@ function dateOnly(value: string) {
 
 export const personDocuments: PersonDocument[] = portalDocuments.map((document, index) => {
   const documentType = documentTypes.find((type) => type.name === document.type) ?? documentTypes[0];
+  const verificationStatus = documentStatuses[document.state] ?? "VERIFIED";
+  const statusHistory: PersonDocument["statusHistory"] = [{
+    id: `history-${document.id}-upload`,
+    previousStatus: null,
+    newStatus: "VERIFIED",
+    changeReason: "ADMIN_UPLOAD",
+    changedByUserId: ADMIN_USER_ID,
+    changedAt: CREATED_AT,
+  }];
+  if (verificationStatus === "EXPIRED") {
+    statusHistory.push({
+      id: `history-${document.id}-expiration`,
+      previousStatus: "VERIFIED",
+      newStatus: "EXPIRED",
+      changeReason: "AUTOMATIC_EXPIRATION",
+      changedByUserId: null,
+      changedAt: UPDATED_AT,
+    });
+  }
   return {
     id: document.id,
     personId: personId(document.person),
@@ -560,9 +582,10 @@ export const personDocuments: PersonDocument[] = portalDocuments.map((document, 
     documentNumber: document.number === "—" ? null : document.number,
     issuedOn: null,
     expiresOn: dateOnly(document.validity),
-    verificationStatus: documentStatuses[document.state] ?? "PENDING",
-    verifiedByUserId: document.state === "Verificado" ? ADMIN_USER_ID : null,
-    verifiedAt: document.state === "Verificado" ? UPDATED_AT : null,
+    verificationStatus,
+    verifiedByUserId: ADMIN_USER_ID,
+    verifiedAt: CREATED_AT,
+    statusHistory,
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   };
@@ -572,7 +595,9 @@ export const contractDocuments: ContractDocument[] = contracts.map((contract, in
   id: `doc-contrato-${index + 1}`,
   contractId: contract.id,
   file: storedFiles[index % storedFiles.length],
-  documentTypeId: documentTypes[index % documentTypes.length].id,
+  documentTypeId: documentTypes.find(
+    (type) => type.scope === "CONTRACT" || type.scope === "BOTH",
+  )?.id ?? documentTypes[index % documentTypes.length].id,
   versionNumber: 1,
   current: true,
   createdAt: CREATED_AT,
