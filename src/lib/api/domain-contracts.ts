@@ -10,7 +10,12 @@ export type ParticipationStatus = "EXPECTED" | "CANCELLED";
 export type AttendanceStatus = "PRESENT" | "ABSENT" | "EXCUSED" | "LATE" | "PARTIAL";
 export type ActivityStatus = "DRAFT" | "PUBLISHED" | "CLOSED" | "CANCELLED";
 export type SubmissionStatus = "DRAFT" | "SUBMITTED" | "LATE" | "GRADED" | "RETURNED";
-export type DocumentVerificationStatus = "PENDING" | "VERIFIED" | "REJECTED" | "EXPIRED";
+export type DocumentVerificationStatus = "VERIFIED" | "EXPIRED";
+export type DocumentTypeScope = "PERSON" | "CONTRACT" | "BOTH";
+export type PersonDocumentStatusChangeReason =
+  | "ADMIN_UPLOAD"
+  | "ADMIN_RENEWAL"
+  | "AUTOMATIC_EXPIRATION";
 export type NotificationAudienceType = "USER" | "COHORT" | "ALL";
 export type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH";
 export type NotificationPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
@@ -44,6 +49,7 @@ export type Person = {
   phoneNumber: string;
   birthDate: string;
   gender: string | null;
+  status: RecordStatus;
   createdAt: string;
   updatedAt: string;
 };
@@ -236,6 +242,16 @@ export type DocumentType = {
   code: string;
   name: string;
   description: string | null;
+  scope: DocumentTypeScope;
+};
+
+export type PersonDocumentStatusHistory = {
+  id: string;
+  previousStatus: DocumentVerificationStatus | null;
+  newStatus: DocumentVerificationStatus;
+  changeReason: PersonDocumentStatusChangeReason;
+  changedByUserId: string | null;
+  changedAt: string;
 };
 
 export type PersonDocument = {
@@ -249,6 +265,7 @@ export type PersonDocument = {
   verificationStatus: DocumentVerificationStatus;
   verifiedByUserId: string | null;
   verifiedAt: string | null;
+  statusHistory: PersonDocumentStatusHistory[];
   createdAt: string;
   updatedAt: string;
 };
