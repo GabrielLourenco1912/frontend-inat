@@ -95,7 +95,7 @@ export default async function ContractDetailPage({
         </Sheet>
       </div>
       <div className="mt-5">
-        {admin ? <ContractDocumentManager contractId={contract.id} documents={documents} documentTypes={documentTypes} /> : <Sheet><EmptyState title="Documentos contratuais protegidos" description="O backend restringe versões e binários contratuais à administração." icon="shield" /></Sheet>}
+        {admin ? <ContractDocumentManager contractId={contract.id} contractStatus={contract.status} documents={documents} documentTypes={documentTypes} /> : <Sheet><EmptyState title="Documentos contratuais protegidos" description="O backend restringe versões e binários contratuais à administração." icon="shield" /></Sheet>}
       </div>
     </>
   );
