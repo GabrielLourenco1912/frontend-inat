@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ContractDocumentManager } from "@/components/portal/ContractDocumentManager";
+import { ContractLifecycleManager } from "@/components/portal/LifecycleManagers";
 import {
   DefinitionList,
   EmptyState,
@@ -60,6 +61,9 @@ export default async function ContractDetailPage({
     person?.fullName ||
     (contract.learnerId === actor.learnerId ? actor.name : learner?.registrationNumber) ||
     contract.learnerId;
+  const today = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date());
 
   return (
     <>
@@ -94,6 +98,7 @@ export default async function ContractDetailPage({
           ]} />
         </Sheet>
       </div>
+      {admin ? <div className="mt-5"><ContractLifecycleManager contract={contract} today={today} /></div> : null}
       <div className="mt-5">
         {admin ? <ContractDocumentManager contractId={contract.id} contractStatus={contract.status} documents={documents} documentTypes={documentTypes} /> : <Sheet><EmptyState title="Documentos contratuais protegidos" description="O backend restringe versões e binários contratuais à administração." icon="shield" /></Sheet>}
       </div>
