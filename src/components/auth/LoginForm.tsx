@@ -103,9 +103,17 @@ export function LoginForm({
         </div>
 
         <div>
-          <label htmlFor="login-password" className="portal-label">
-            Senha
-          </label>
+          <div className="flex items-center justify-between gap-4">
+            <label htmlFor="login-password" className="portal-label">
+              Senha
+            </label>
+            <Link
+              href="/recuperar-senha"
+              className="text-xs font-semibold text-[var(--inat-teal-dark)] hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
           <div className="relative mt-2">
             <Icon name="lock" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]" />
             <input

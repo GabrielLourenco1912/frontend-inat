@@ -22,7 +22,10 @@ export type PageResponse<T> = {
   last: boolean;
 };
 
-export type AuthChallengePurpose = "EMAIL_VERIFICATION" | "MFA_LOGIN";
+export type AuthChallengePurpose =
+  | "EMAIL_VERIFICATION"
+  | "MFA_LOGIN"
+  | "PASSWORD_RESET";
 
 export type AuthChallengeResponse = {
   challengeId: string;
