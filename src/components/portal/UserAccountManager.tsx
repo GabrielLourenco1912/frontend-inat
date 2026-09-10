@@ -117,7 +117,6 @@ export function UserAccountManager({
       await putJson<UserResponse>(
         "/api/backend/users/" + encodeURIComponent(selected.id),
         {
-          personId: String(form.get("personId")),
           displayName: String(form.get("displayName") ?? "").trim(),
           loginEmail: String(form.get("loginEmail") ?? "").trim(),
           password: String(form.get("password") ?? "") || null,
@@ -198,7 +197,7 @@ export function UserAccountManager({
       <PageHeader
         eyebrow="Administração"
         title="Usuários"
-        description="Contas existentes, vínculo obrigatório com pessoa, papéis e situação. Novas contas entram somente pelo cadastro público."
+        description="Contas existentes, vínculo imutável com pessoa, papéis e situação. Novas contas entram somente pelo cadastro público."
       />
       {error ? (
         <p
@@ -358,18 +357,21 @@ export function UserAccountManager({
                   </label>
                   <label>
                     <span className="portal-label">Pessoa vinculada</span>
-                    <select
-                      name="personId"
-                      defaultValue={selected.personId}
-                      className="portal-field mt-2 h-10 w-full px-3"
-                      required
+                    <input
+                      value={
+                        people.find((person) => person.id === selected.personId)
+                          ?.fullName ?? selected.personId
+                      }
+                      className="portal-field mt-2 h-10 w-full cursor-not-allowed bg-[var(--inat-paper)] px-3 text-[var(--inat-muted)]"
+                      aria-describedby="linked-person-help"
+                      readOnly
+                    />
+                    <span
+                      id="linked-person-help"
+                      className="mt-2 block text-xs leading-5 text-[var(--inat-muted)]"
                     >
-                      {people.map((person) => (
-                        <option key={person.id} value={person.id}>
-                          {person.fullName}
-                        </option>
-                      ))}
-                    </select>
+                      Este vínculo é definido na criação da conta e não pode ser alterado.
+                    </span>
                   </label>
                   <label>
                     <span className="portal-label">Situação</span>
