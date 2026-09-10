@@ -283,7 +283,9 @@ export const cohorts: Cohort[] = portalCohorts.map((cohort) => {
     shiftCode: cohort.schedule.includes("Tarde") ? "TARDE" : "MANHA",
     startDate,
     endDate,
+    maxLearners: 30,
     status: cohort.state === "Encerrada" ? "COMPLETED" : "ACTIVE",
+    statusHistory: [],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   };
@@ -315,6 +317,7 @@ export const contracts: Contract[] = portalContracts.map((contract) => {
     ),
     weeklyWorkloadMinutes: Number(contract.workload.match(/\d+/)?.[0] ?? 20) * 60,
     status: contract.state === "Suspenso" ? "SUSPENDED" : "ACTIVE",
+    statusHistory: [],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   };
@@ -332,6 +335,7 @@ export const enrollments: CohortEnrollment[] = portalLearners.flatMap((learner) 
     startDate: contract.startDate,
     endDate: contract.endDate,
     status: learner.state === "Ativo" ? "ACTIVE" as const : "CANCELLED" as const,
+    statusHistory: [],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   }];
