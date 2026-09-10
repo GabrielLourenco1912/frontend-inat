@@ -6,8 +6,6 @@ import { Icon } from "@/components/design-system/Icon";
 import { deleteResource, postJson, putJson, requestErrorMessage } from "@/lib/api/client";
 import type {
   Cohort,
-  CohortStatus,
-  ContractStatus,
   Learner,
   LessonStatus,
   Organization,
@@ -146,24 +144,38 @@ export function LearnerOnboardingCreator({ guardianPeople }: { guardianPeople: P
 
 export function CohortCreator() {
   const router = useRouter();
-  return <CreatorModal title="Criar turma" trigger="Nova turma">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/cohorts" successLabel="Criar turma" build={(form) => ({ code: String(form.get("code") ?? "").trim(), name: String(form.get("name") ?? "").trim(), defaultWeekday: Number(form.get("defaultWeekday")), shiftCode: String(form.get("shiftCode") ?? "").trim(), startDate: String(form.get("startDate") ?? ""), endDate: String(form.get("endDate") ?? "") || null, status: String(form.get("status")) as CohortStatus })}><div className="grid gap-4 sm:grid-cols-2"><label><span className="portal-label">Código</span><input name="code" maxLength={40} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome</span><input name="name" maxLength={120} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Dia padrão</span><select name="defaultWeekday" defaultValue="1" className="portal-field mt-2 h-10 w-full px-3"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="7">Domingo</option></select></label><label><span className="portal-label">Turno</span><input name="shiftCode" maxLength={20} placeholder="MANHA" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="PLANNED" className="portal-field mt-2 h-10 w-full px-3"><option value="PLANNED">Planejada</option><option value="ACTIVE">Ativa</option><option value="COMPLETED">Concluída</option><option value="CANCELLED">Cancelada</option></select></label></div></RequestForm>}</CreatorModal>;
+  return <CreatorModal title="Criar turma" trigger="Nova turma">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/cohorts" successLabel="Criar turma" build={(form) => ({
+    code: String(form.get("code") ?? "").trim(),
+    name: String(form.get("name") ?? "").trim(),
+    defaultWeekday: Number(form.get("defaultWeekday")),
+    shiftCode: String(form.get("shiftCode") ?? "").trim(),
+    startDate: String(form.get("startDate") ?? ""),
+    endDate: String(form.get("endDate") ?? "") || null,
+    maxLearners: String(form.get("maxLearners") ?? "") ? Number(form.get("maxLearners")) : null,
+    status: "PLANNED",
+    statusReason: null,
+  })}><div className="grid gap-4 sm:grid-cols-2"><p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-3 text-sm leading-6 sm:col-span-2">Toda turma nasce como planejada. A ativação é feita depois, quando seu período estiver vigente.</p><label><span className="portal-label">Código</span><input name="code" maxLength={40} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome</span><input name="name" maxLength={120} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Dia padrão</span><select name="defaultWeekday" defaultValue="1" className="portal-field mt-2 h-10 w-full px-3"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="7">Domingo</option></select></label><label><span className="portal-label">Turno</span><input name="shiftCode" maxLength={20} placeholder="MANHA" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Capacidade (opcional)</span><input name="maxLearners" type="number" min="1" className="portal-field mt-2 h-10 w-full px-3" /></label></div></RequestForm>}</CreatorModal>;
 }
 
 export function ContractCreator({ learners, people, organizations }: { learners: Learner[]; people: Person[]; organizations: Organization[] }) {
   const router = useRouter();
   const peopleMap = new Map(people.map((person) => [person.id, person.fullName]));
-  const employers = organizations.filter((item) => item.organizationType === "EMPLOYER");
-  const schools = organizations.filter((item) => item.organizationType === "SCHOOL");
-  return <CreatorModal title="Criar contrato" trigger="Novo contrato" disabled={!learners.length || !employers.length}>{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/contracts" successLabel="Criar contrato" build={(form) => ({ learnerId: String(form.get("learnerId")), employerId: String(form.get("employerId")), schoolId: String(form.get("schoolId") ?? "") || null, startDate: String(form.get("startDate") ?? ""), endDate: String(form.get("endDate") ?? "") || null, monthlySalary: Number(String(form.get("monthlySalary") ?? "").replace(",", ".")), weeklyWorkloadMinutes: Number(form.get("weeklyWorkloadMinutes")), status: String(form.get("status")) as ContractStatus })}><div className="grid gap-4 sm:grid-cols-2"><label className="sm:col-span-2"><span className="portal-label">Aprendiz</span><select name="learnerId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{learners.map((learner) => <option key={learner.id} value={learner.id}>{peopleMap.get(learner.personId) || learner.registrationNumber}</option>)}</select></label><label><span className="portal-label">Empresa</span><select name="employerId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{employers.map((item) => <option key={item.id} value={item.id}>{item.tradeName || item.legalName}</option>)}</select></label><label><span className="portal-label">Escola (quando aplicável)</span><select name="schoolId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3"><option value="">Sem escola</option>{schools.map((item) => <option key={item.id} value={item.id}>{item.tradeName || item.legalName}</option>)}</select></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Salário mensal</span><input name="monthlySalary" inputMode="decimal" placeholder="1069,48" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Carga semanal (minutos)</span><input name="weeklyWorkloadMinutes" type="number" min="1" max="10080" defaultValue="1200" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="DRAFT" className="portal-field mt-2 h-10 w-full px-3"><option value="DRAFT">Rascunho</option><option value="ACTIVE">Ativo</option><option value="SUSPENDED">Suspenso</option><option value="ENDED">Encerrado</option><option value="CANCELLED">Cancelado</option></select></label></div></RequestForm>}</CreatorModal>;
+  const activePersonIds = new Set(people.filter((person) => person.status === "ACTIVE").map((person) => person.id));
+  const eligibleLearners = learners.filter((learner) => learner.status === "ACTIVE" && activePersonIds.has(learner.personId));
+  const employers = organizations.filter((item) => item.organizationType === "EMPLOYER" && item.status === "ACTIVE");
+  const schools = organizations.filter((item) => item.organizationType === "SCHOOL" && item.status === "ACTIVE");
+  return <CreatorModal title="Criar contrato" trigger="Novo contrato" disabled={!eligibleLearners.length || !employers.length}>{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/contracts" successLabel="Criar contrato" build={(form) => ({ learnerId: String(form.get("learnerId")), employerId: String(form.get("employerId")), schoolId: String(form.get("schoolId") ?? "") || null, startDate: String(form.get("startDate") ?? ""), endDate: String(form.get("endDate") ?? "") || null, monthlySalary: Number(String(form.get("monthlySalary") ?? "").replace(",", ".")), weeklyWorkloadMinutes: Number(form.get("weeklyWorkloadMinutes")), status: "DRAFT", statusReason: null })}><div className="grid gap-4 sm:grid-cols-2"><p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-3 text-sm leading-6 sm:col-span-2">O contrato será salvo como rascunho. Documentos podem ser adicionados depois e não são exigidos para criá-lo ou ativá-lo.</p><label className="sm:col-span-2"><span className="portal-label">Aprendiz ativo</span><select name="learnerId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{eligibleLearners.map((learner) => <option key={learner.id} value={learner.id}>{peopleMap.get(learner.personId) || learner.registrationNumber}</option>)}</select></label><label><span className="portal-label">Empresa ativa</span><select name="employerId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{employers.map((item) => <option key={item.id} value={item.id}>{item.tradeName || item.legalName}</option>)}</select></label><label><span className="portal-label">Escola ativa (quando aplicável)</span><select name="schoolId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3"><option value="">Sem escola</option>{schools.map((item) => <option key={item.id} value={item.id}>{item.tradeName || item.legalName}</option>)}</select></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Salário mensal</span><input name="monthlySalary" inputMode="decimal" placeholder="1069,48" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Carga semanal (minutos)</span><input name="weeklyWorkloadMinutes" type="number" min="1" max="10080" defaultValue="1200" className="portal-field mt-2 h-10 w-full px-3" required /></label></div></RequestForm>}</CreatorModal>;
 }
 
 export function LessonCreator({ cohorts, people }: { cohorts: Cohort[]; people: Person[] }) {
   const router = useRouter();
+  const eligibleCohorts = cohorts.filter((cohort) => cohort.status === "ACTIVE");
+  const eligiblePeople = people.filter((person) => person.status === "ACTIVE");
   return (
     <CreatorModal
       title="Planejar aula"
       trigger="Nova aula"
-      disabled={!cohorts.length || !people.length}
+      disabled={!eligibleCohorts.length || !eligiblePeople.length}
     >
       {(close) => (
         <RequestForm
@@ -204,7 +216,7 @@ export function LessonCreator({ cohorts, people }: { cohorts: Cohort[]; people: 
                 required
               >
                 <option value="" disabled>Selecione</option>
-                {cohorts.map((cohort) => (
+                {eligibleCohorts.map((cohort) => (
                   <option key={cohort.id} value={cohort.id}>
                     {cohort.code} · {cohort.name}
                   </option>
@@ -220,7 +232,7 @@ export function LessonCreator({ cohorts, people }: { cohorts: Cohort[]; people: 
                 required
               >
                 <option value="" disabled>Selecione</option>
-                {people.map((person) => (
+                {eligiblePeople.map((person) => (
                   <option key={person.id} value={person.id}>
                     {person.fullName}
                   </option>

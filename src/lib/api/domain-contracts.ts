@@ -3,6 +3,12 @@ export type OrganizationType = "EMPLOYER" | "SCHOOL";
 export type CohortStatus = "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type EnrollmentStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type ContractStatus = "DRAFT" | "ACTIVE" | "SUSPENDED" | "ENDED" | "CANCELLED";
+export type LifecycleChangeReason =
+  | "CREATED"
+  | "ADMIN_TRANSITION"
+  | "AUTOMATIC_TRANSITION"
+  | "PARENT_CANCELLED"
+  | "PARENT_COMPLETED";
 export type DeliveryMode = "ONSITE" | "ONLINE";
 export type LessonStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type ParticipationType = "REGULAR" | "TRANSFERRED" | "MAKEUP" | "EXTRA";
@@ -103,6 +109,16 @@ export type LearnerGuardian = {
   updatedAt: string;
 };
 
+export type LifecycleStatusHistory = {
+  id: string;
+  previousStatus: string | null;
+  newStatus: string;
+  changeReason: LifecycleChangeReason;
+  reasonDetail: string | null;
+  changedByUserId: string | null;
+  changedAt: string;
+};
+
 export type Cohort = {
   id: string;
   code: string;
@@ -111,7 +127,9 @@ export type Cohort = {
   shiftCode: string;
   startDate: string;
   endDate: string | null;
+  maxLearners: number | null;
   status: CohortStatus;
+  statusHistory: LifecycleStatusHistory[];
   createdAt: string;
   updatedAt: string;
 };
@@ -124,6 +142,7 @@ export type CohortEnrollment = {
   startDate: string;
   endDate: string | null;
   status: EnrollmentStatus;
+  statusHistory: LifecycleStatusHistory[];
   createdAt: string;
   updatedAt: string;
 };
@@ -138,6 +157,7 @@ export type Contract = {
   monthlySalary: number;
   weeklyWorkloadMinutes: number;
   status: ContractStatus;
+  statusHistory: LifecycleStatusHistory[];
   createdAt: string;
   updatedAt: string;
 };

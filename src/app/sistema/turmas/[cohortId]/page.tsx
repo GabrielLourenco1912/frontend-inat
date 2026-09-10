@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CohortEnrollmentManager } from "@/components/portal/CohortEnrollmentManager";
+import { CohortLifecycleManager } from "@/components/portal/LifecycleManagers";
 import {
   DefinitionList,
   EmptyState,
@@ -51,6 +52,9 @@ export default async function CohortDetailPage({
   const lessons = allLessons
     .filter((lesson) => lesson.cohortId === cohort.id)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const today = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date());
   const personMap = new Map(people.map((person) => [person.id, person.fullName]));
   const learnerMap = new Map(learners.map((learner) => [learner.id, learner]));
   const organizationMap = new Map(
@@ -84,6 +88,7 @@ export default async function CohortDetailPage({
             { label: "Agenda padrão", value: `${weekdays[cohort.defaultWeekday] ?? cohort.defaultWeekday} · ${cohort.shiftCode}` },
             { label: "Período", value: formatPeriod(cohort.startDate, cohort.endDate) },
             { label: "Matrículas", value: String(enrollments.length) },
+            { label: "Capacidade", value: cohort.maxLearners == null ? "Sem limite" : String(cohort.maxLearners) },
             { label: "Situação", value: <StatusMark>{apiLabel(cohort.status)}</StatusMark> },
           ]} />
         </Sheet>
@@ -92,7 +97,8 @@ export default async function CohortDetailPage({
           {lessons.length ? <div className="divide-y divide-[var(--inat-line)]">{lessons.slice(0, 6).map((lesson) => <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="grid gap-2 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"><div><p className="text-sm font-semibold">{lesson.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)} · {apiLabel(lesson.deliveryMode)}</p></div><StatusMark>{apiLabel(lesson.status)}</StatusMark></Link>)}</div> : <EmptyState title="Nenhuma aula planejada" description="Esta turma ainda não possui aulas no backend." icon="calendar" />}
         </Sheet>
       </div>
-      <div className="mt-5"><CohortEnrollmentManager cohortId={cohort.id} enrollments={enrollments} contractOptions={contractOptions} /></div>
+      <div className="mt-5"><CohortLifecycleManager cohort={cohort} today={today} hasOpenLessons={lessons.some((lesson) => lesson.status === "SCHEDULED" || lesson.status === "IN_PROGRESS")} reservedCount={enrollments.filter((enrollment) => enrollment.status === "PENDING" || enrollment.status === "ACTIVE").length} /></div>
+      <div className="mt-5"><CohortEnrollmentManager cohort={cohort} enrollments={enrollments} contractOptions={contractOptions} today={today} /></div>
     </>
   );
 }
