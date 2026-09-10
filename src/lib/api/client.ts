@@ -190,6 +190,12 @@ export function requestErrorMessage(error: unknown, fallback: string) {
   if (error.status === 403) return "Seu perfil não permite concluir esta ação.";
   if (error.status === 404) return "O registro relacionado não foi encontrado.";
   if (error.status === 409) return "A operação conflita com um registro já existente.";
+  if (
+    error.status === 422 &&
+    error.message.toLowerCase().includes("verified email")
+  ) {
+    return "A conta deve permanecer como convidada até confirmar o e-mail.";
+  }
   if (error.status === 422) return error.message || "A regra de negócio não permite esta operação.";
   return fallback;
 }

@@ -37,7 +37,7 @@ const statusPresentation: Record<UserAccountStatus, StatusPresentation> = {
     label: "Ativo",
     tone: "success",
     description:
-      "A conta pode entrar no portal e os papéis atribuídos determinam os módulos disponíveis.",
+      "A conta possui e-mail confirmado, pode entrar no portal e os papéis atribuídos determinam os módulos disponíveis.",
   },
   INVITED: {
     label: "Convidado",
@@ -70,6 +70,10 @@ function statusDescription(user: UserResponse, previewStatus: UserAccountStatus)
   return statusPresentation[previewStatus].description;
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export function UserAccountManager({
   users,
   people,
@@ -81,12 +85,21 @@ export function UserAccountManager({
   const [previewStatus, setPreviewStatus] = useState<UserAccountStatus>(
     users[0]?.status ?? "ACTIVE",
   );
+  const [loginEmail, setLoginEmail] = useState(users[0]?.loginEmail ?? "");
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const selected = users.find((user) => user.id === selectedId) ?? users[0];
+  const loginEmailChanged = selected
+    ? normalizeEmail(loginEmail) !== normalizeEmail(selected.loginEmail)
+    : false;
+  const activeStatusUnavailable = Boolean(
+    selected && (!selected.emailVerifiedAt || loginEmailChanged),
+  );
+  const activationBlocked =
+    previewStatus === "ACTIVE" && activeStatusUnavailable;
   const visible = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("pt-BR");
     return users.filter((user) =>
@@ -107,6 +120,20 @@ export function UserAccountManager({
     if (!selected) return;
 
     const form = new FormData(event.currentTarget);
+    const requestedEmail = String(form.get("loginEmail") ?? "").trim();
+    const requestedStatus = String(form.get("status")) as UserAccountStatus;
+    const requestedEmailChanged =
+      normalizeEmail(requestedEmail) !== normalizeEmail(selected.loginEmail);
+    if (
+      requestedStatus === "ACTIVE" &&
+      (!selected.emailVerifiedAt || requestedEmailChanged)
+    ) {
+      setError(
+        "Uma conta sem e-mail confirmado deve permanecer como convidada até concluir a verificação.",
+      );
+      setMessage("");
+      return;
+    }
     const desiredRoleIds = new Set(form.getAll("roleId").map(Number));
     const assigned = roleAssignments[selected.id] ?? [];
     setSaving(true);
@@ -118,9 +145,9 @@ export function UserAccountManager({
         "/api/backend/users/" + encodeURIComponent(selected.id),
         {
           displayName: String(form.get("displayName") ?? "").trim(),
-          loginEmail: String(form.get("loginEmail") ?? "").trim(),
+          loginEmail: requestedEmail,
           password: String(form.get("password") ?? "") || null,
-          status: String(form.get("status")) as UserAccountStatus,
+          status: requestedStatus,
         },
       );
 
@@ -150,7 +177,7 @@ export function UserAccountManager({
           ),
       ]);
       setMessage(
-        previewStatus === "ACTIVE"
+        requestedStatus === "ACTIVE"
           ? "Conta e papéis atualizados no backend."
           : "Conta atualizada. Os papéis permanecem registrados, mas não concedem acesso enquanto ela não estiver ativa.",
       );
@@ -190,7 +217,14 @@ export function UserAccountManager({
     }
   }
 
-  const preview = statusPresentation[previewStatus];
+  const preview: StatusPresentation = activationBlocked
+    ? {
+        label: "Ativação indisponível",
+        tone: "warning",
+        description:
+          "A conta precisa confirmar o e-mail antes de ser ativada. Mantenha-a como convidada até a validação do código.",
+      }
+    : statusPresentation[previewStatus];
 
   return (
     <>
@@ -252,6 +286,7 @@ export function UserAccountManager({
                     onClick={() => {
                       setSelectedId(user.id);
                       setPreviewStatus(user.status);
+                      setLoginEmail(user.loginEmail);
                       setError("");
                       setMessage("");
                     }}
@@ -323,7 +358,9 @@ export function UserAccountManager({
                     <strong>{preview.label}</strong>
                   </div>
                   <p className="mt-1">
-                    {statusDescription(selected, previewStatus)}
+                    {activationBlocked
+                      ? preview.description
+                      : statusDescription(selected, previewStatus)}
                   </p>
                   <p className="mt-2 text-xs opacity-80">
                     E-mail confirmado:{" "}
@@ -349,7 +386,18 @@ export function UserAccountManager({
                     <input
                       name="loginEmail"
                       type="email"
-                      defaultValue={selected.loginEmail}
+                      value={loginEmail}
+                      onChange={(event) => {
+                        const nextEmail = event.target.value;
+                        setLoginEmail(nextEmail);
+                        if (
+                          previewStatus === "ACTIVE" &&
+                          normalizeEmail(nextEmail) !==
+                            normalizeEmail(selected.loginEmail)
+                        ) {
+                          setPreviewStatus("INVITED");
+                        }
+                      }}
                       maxLength={254}
                       className="portal-field mt-2 h-10 w-full px-3"
                       required
@@ -386,10 +434,22 @@ export function UserAccountManager({
                       className="portal-field mt-2 h-10 w-full px-3"
                     >
                       <option value="INVITED">Convidado</option>
-                      <option value="ACTIVE">Ativo</option>
+                      <option
+                        value="ACTIVE"
+                        disabled={activeStatusUnavailable}
+                      >
+                        Ativo
+                      </option>
                       <option value="LOCKED">Bloqueado</option>
                       <option value="DISABLED">Desativado</option>
                     </select>
+                    {activeStatusUnavailable ? (
+                      <span className="mt-2 block text-xs leading-5 text-amber-800">
+                        {loginEmailChanged
+                          ? "Alterar o e-mail remove a confirmação atual. Salve como convidado para validar o novo endereço."
+                          : "A ativação será feita automaticamente após a confirmação do e-mail."}
+                      </span>
+                    ) : null}
                   </label>
                   <label className="sm:col-span-2">
                     <span className="portal-label">
@@ -454,7 +514,12 @@ export function UserAccountManager({
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || activationBlocked}
+                  title={
+                    activationBlocked
+                      ? "Confirme o e-mail antes de ativar esta conta."
+                      : undefined
+                  }
                   className="portal-button portal-button-primary"
                 >
                   {saving ? "Salvando..." : "Salvar alterações"}
