@@ -152,6 +152,12 @@ export function authErrorMessage(error: unknown, fallback: string) {
   if (normalizedMessage.includes("email already in use")) {
     return "Esse e-mail já está sendo utilizado por outra conta.";
   }
+  if (normalizedMessage.includes("active person")) {
+    return "A pessoa vinculada a esse e-mail não está ativa. Procure a equipe do INAT.";
+  }
+  if (normalizedMessage.includes("password reset is unavailable")) {
+    return "Não foi possível recuperar a senha dessa conta. Confirme o e-mail ou procure a equipe do INAT.";
+  }
 
   if (isFieldErrorList(error.details)) {
     const field = error.details[0]?.field;
@@ -159,6 +165,7 @@ export function authErrorMessage(error: unknown, fallback: string) {
       name: "Revise o nome informado.",
       email: "Informe um e-mail válido.",
       password: "A senha deve ter ao menos 8 caracteres e no máximo 72 bytes.",
+      newPassword: "A nova senha deve ter ao menos 8 caracteres e no máximo 72 bytes.",
       regulationAccepted: "É necessário aceitar o regulamento para criar a conta.",
       regulationAcceptedAt: "Marque novamente o aceite do regulamento.",
       code: "Informe o código de seis dígitos enviado por e-mail.",
