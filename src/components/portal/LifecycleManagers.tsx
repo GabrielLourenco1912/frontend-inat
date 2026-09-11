@@ -1,5 +1,7 @@
 "use client";
 
+import { useClientPagination } from "@/components/design-system/ClientPagination";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SectionHeading, Sheet, StatusMark } from "@/components/design-system/PortalPrimitives";
@@ -20,9 +22,11 @@ function addOneDay(value: string) {
 }
 
 function History({ entries }: { entries: LifecycleStatusHistory[] }) {
+  const page = useClientPagination([...entries].reverse());
   return entries.length ? (
+    <>
     <ol className="divide-y divide-[var(--inat-line)] border-t border-[var(--inat-line)]">
-      {[...entries].reverse().map((entry) => (
+      {page.items.map((entry) => (
         <li key={entry.id} className="grid gap-1 px-5 py-3 text-sm sm:grid-cols-[1fr_auto]">
           <div>
             <p className="font-semibold">
@@ -35,6 +39,8 @@ function History({ entries }: { entries: LifecycleStatusHistory[] }) {
         </li>
       ))}
     </ol>
+    {page.controls}
+    </>
   ) : (
     <p className="border-t border-[var(--inat-line)] px-5 py-4 text-sm text-[var(--inat-muted)]">
       Nenhuma mudança de situação foi registrada ainda.

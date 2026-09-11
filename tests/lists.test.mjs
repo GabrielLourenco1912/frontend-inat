@@ -73,3 +73,51 @@ test("empty lists have no disabled controls or page zero", () => {
   assert.match(html, /Página 1 de 1/);
   assert.doesNotMatch(html, /<nav|disabled/);
 });
+
+
+test("complete array lists render only twenty records on desktop and mobile", () => {
+  const { DataList } = load("components/design-system/DataList");
+  const html = render(DataList, {
+    records: Array.from({ length: 45 }, (_, id) => ({ id: String(id), name: `Record-${id}-end` })),
+    columns: [{ key: "name", label: "Nome", primary: true }],
+  });
+  assert.match(html, /Mostrando 20 de 45/);
+  assert.match(html, /Página 1 de 3/);
+  assert.equal((html.match(/Record-19-end/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /Record-20-end/);
+  assert.match(html, /Próxima página/);
+});
+
+test("detail collections share the twenty-item limit", () => {
+  const { PaginatedContent } = load("components/design-system/ClientPagination");
+  const html = render(PaginatedContent, {
+    children: Array.from({ length: 45 }, (_, id) => createElement("div", { key: id }, `Entry-${id}-end`)),
+  });
+  assert.match(html, /Entry-19-end/);
+  assert.doesNotMatch(html, /Entry-20-end/);
+  assert.match(html, /Mostrando 20 de 45/);
+});
+
+test("empty filtered server pages retain navigation and backend totals", () => {
+  const { DataList } = load("components/design-system/DataList");
+  const html = render(DataList, {
+    records: [], columns: [{ key: "name", label: "Nome" }],
+    pagination: { page: 1, total: 45, totalPages: 3, previousHref: "?page=1", nextHref: "?page=3" },
+  });
+  assert.match(html, /Mostrando 0 de 45/);
+  assert.match(html, /Página 2 de 3/);
+  assert.match(html, /Página anterior/);
+  assert.match(html, /Próxima página/);
+});
+
+test("local page controls emit the correct destinations", () => {
+  const destinations = [];
+  const tree = ListPagination({ shown: 20, total: 65, page: 1, totalPages: 4, onPageChange: (page) => destinations.push(page) });
+  function visit(node) {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "button") node.props.onClick();
+    for (const child of [node.props?.children].flat(Infinity)) visit(child);
+  }
+  visit(tree);
+  assert.deepEqual(destinations, [0, 2]);
+});

@@ -1,5 +1,8 @@
 "use client";
 
+import { ListPagination } from "@/components/design-system/ListPagination";
+import type { Pagination } from "@/lib/pagination";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/design-system/Icon";
@@ -14,7 +17,7 @@ function safeActionUrl(value: string | null) {
     : "/sistema/avisos";
 }
 
-export function NoticeInbox({ initialNotices }: { initialNotices: NotificationRecipient[] }) {
+export function NoticeInbox({ initialNotices, pagination }: { initialNotices: NotificationRecipient[]; pagination?: Pagination }) {
   const [notices, setNotices] = useState(initialNotices);
   const [filter, setFilter] = useState<"Não lidos" | "Todos">("Não lidos");
   const [saving, setSaving] = useState(false);
@@ -63,7 +66,7 @@ export function NoticeInbox({ initialNotices }: { initialNotices: NotificationRe
       <PageHeader
         eyebrow="Caixa pessoal"
         title="Avisos"
-        description={`${unread} ${unread === 1 ? "aviso não lido" : "avisos não lidos"}. A leitura é registrada no backend.`}
+        description={`${unread} ${unread === 1 ? "aviso não lido" : "avisos não lidos"}. nesta página.`}
         action={
           unread ? (
             <button
@@ -73,7 +76,7 @@ export function NoticeInbox({ initialNotices }: { initialNotices: NotificationRe
               className="portal-button portal-button-secondary disabled:opacity-60"
             >
               <Icon name="check" className="size-4" />
-              {saving ? "Atualizando..." : "Marcar todos como lidos"}
+              {saving ? "Atualizando..." : "Marcar esta página como lida"}
             </button>
           ) : undefined
         }
@@ -97,6 +100,7 @@ export function NoticeInbox({ initialNotices }: { initialNotices: NotificationRe
             </button>
           ))}
         </div>
+        {pagination ? <p className="px-4 py-2 text-xs text-[var(--inat-muted)]">Os filtros se aplicam aos avisos desta página.</p> : null}
         {visible.length ? (
           <div className="divide-y divide-[var(--inat-line)]">
             {visible.map((notice) => (
@@ -137,11 +141,12 @@ export function NoticeInbox({ initialNotices }: { initialNotices: NotificationRe
             <div>
               <span className="mx-auto grid size-11 place-items-center bg-emerald-50 text-emerald-700"><Icon name="check" className="size-5" /></span>
               <h2 className="mt-4 font-semibold">{notices.length ? "Tudo em dia" : "Nenhum aviso recebido"}</h2>
-              <p className="mt-2 text-sm text-[var(--inat-muted)]">{notices.length ? "Não há avisos não lidos neste momento." : "Sua caixa será preenchida quando o backend criar uma notificação para você."}</p>
+              <p className="mt-2 text-sm text-[var(--inat-muted)]">{notices.length ? "Não há avisos não lidos nesta página." : "Sua caixa será preenchida quando o backend criar uma notificação para você."}</p>
               {notices.length ? <button type="button" onClick={() => setFilter("Todos")} className="portal-button portal-button-secondary mt-5">Ver avisos anteriores</button> : null}
             </div>
           </div>
         )}
+        {pagination ? <ListPagination shown={visible.length} {...pagination} /> : null}
       </div>
     </>
   );

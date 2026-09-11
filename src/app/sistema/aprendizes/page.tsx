@@ -1,3 +1,5 @@
+import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { accessibleLearnersPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { LearnerOnboardingCreator } from "@/components/portal/ResourceCreators";
@@ -13,13 +15,13 @@ import type {
   Person,
 } from "@/lib/api/domain-contracts";
 import { requireCapability } from "@/lib/auth/session";
-import { accessibleLearners } from "@/lib/portal/data";
 
-export default async function LearnersPage() {
+export default async function LearnersPage({ searchParams }: ListPageProps) {
+  const query = await searchParams ?? {};
   const actor = await requireCapability("learners:read");
   const admin = hasRole(actor, "ADMIN");
-  const [learners, people, contracts, enrollments, cohorts, organizations] = await Promise.all([
-    accessibleLearners(actor),
+  const [page, people, contracts, enrollments, cohorts, organizations] = await Promise.all([
+    accessibleLearnersPage(actor, query),
     admin ? serverApiAll<Person>("/api/people") : Promise.resolve([]),
     admin ? serverApiAll<Contract>("/api/contracts") : Promise.resolve([]),
     admin ? serverApiAll<CohortEnrollment>("/api/cohort-enrollments") : Promise.resolve([]),
@@ -27,6 +29,7 @@ export default async function LearnersPage() {
     admin ? serverApiAll<Organization>("/api/organizations") : Promise.resolve([]),
   ]);
   const personMap = new Map(people.map((person) => [person.id, person.fullName]));
+  const learners = page.content;
   const contractById = new Map(contracts.map((contract) => [contract.id, contract]));
   const cohortMap = new Map(cohorts.map((cohort) => [cohort.id, cohort.code]));
   const organizationMap = new Map(
@@ -69,7 +72,7 @@ export default async function LearnersPage() {
         description={hasRole(actor, "EMPLOYER_MANAGER") ? "Aprendizes com contrato ativo ou histórico autorizado na sua organização." : "Matrícula, escolaridade, turma e situação acadêmica em uma visão contextual."}
         action={can(actor, "learners:manage") ? <LearnerOnboardingCreator guardianPeople={people} /> : undefined}
       />
-      <DataList
+      <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}
         itemLabel="aprendiz"
         searchPlaceholder="Buscar por nome ou matrícula"

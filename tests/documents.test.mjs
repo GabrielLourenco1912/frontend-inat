@@ -152,7 +152,7 @@ test("person detail loads documents only when its documents tab is opened", asyn
   await PersonPage({ params, searchParams: Promise.resolve({}) });
   assert.deepEqual(documentRequests(), []);
   await PersonPage({ params, searchParams: Promise.resolve({ tab: "documentos" }) });
-  assert.deepEqual(documentRequests(), [{ name: "serverApiAll", path: `/api/person-documents?personId=${encodeURIComponent(personId)}` }]);
+  assert.deepEqual(documentRequests(), [{ name: "serverApiPage", path: `/api/person-documents?personId=${encodeURIComponent(personId)}&page=0&size=20` }]);
 });
 
 test("learner detail uses the same person's documents only in the documents tab", async () => {
@@ -161,7 +161,7 @@ test("learner detail uses the same person's documents only in the documents tab"
   await LearnerPage({ params, searchParams: Promise.resolve({}) });
   assert.deepEqual(documentRequests(), []);
   const result = await LearnerPage({ params, searchParams: Promise.resolve({ tab: "documentos", document: "chosen-document" }) });
-  assert.deepEqual(documentRequests(), [{ name: "serverApiAll", path: `/api/person-documents?personId=${encodeURIComponent(learner.personId)}` }]);
+  assert.deepEqual(documentRequests(), [{ name: "serverApiPage", path: `/api/person-documents?personId=${encodeURIComponent(learner.personId)}&page=0&size=20` }, { name: "serverApiGetOrNull", path: "/api/person-documents/chosen-document" }]);
   assert.equal(result.props.activeTab, "documentos");
   assert.equal(result.props.initialDocumentId, "chosen-document");
   assert.ok(result.props.documents.every((document) => document.personId === learner.personId));
@@ -173,7 +173,7 @@ test("contract detail loads only its contractual files and only in the documents
   await ContractPage({ params, searchParams: Promise.resolve({}) });
   assert.deepEqual(documentRequests(), []);
   await ContractPage({ params, searchParams: Promise.resolve({ tab: "documentos" }) });
-  assert.deepEqual(documentRequests(), [{ name: "serverApiAll", path: `/api/contract-documents?contractId=${encodeURIComponent(contractId)}` }]);
+  assert.deepEqual(documentRequests(), [{ name: "serverApiPage", path: `/api/contract-documents?contractId=${encodeURIComponent(contractId)}&page=0&size=20` }]);
 });
 
 test("document links choose the learner when present and open the selected document", () => {

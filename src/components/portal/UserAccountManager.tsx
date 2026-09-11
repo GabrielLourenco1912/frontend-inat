@@ -1,5 +1,8 @@
 "use client";
 
+import { ListPagination } from "@/components/design-system/ListPagination";
+import type { Pagination } from "@/lib/pagination";
+
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 import { Icon } from "@/components/design-system/Icon";
@@ -22,6 +25,7 @@ import { hasPersonType } from "@/lib/people/person-types";
 
 type UserAccountManagerProps = {
   users: UserResponse[];
+  pagination?: Pagination;
   people: Person[];
   roles: RoleRecord[];
   roleAssignments: Record<string, UserRole[]>;
@@ -80,6 +84,7 @@ export function UserAccountManager({
   people,
   roles,
   roleAssignments,
+  pagination,
 }: UserAccountManagerProps) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(users[0]?.id ?? "");
@@ -275,7 +280,7 @@ export function UserAccountManager({
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   type="search"
-                  placeholder="Buscar conta"
+                  placeholder="Buscar conta nesta página"
                   className="portal-field h-10 w-full pl-9 pr-3"
                 />
               </div>
@@ -321,6 +326,7 @@ export function UserAccountManager({
                 );
               })}
             </div>
+            {pagination ? <ListPagination shown={visible.length} {...pagination} /> : null}
           </aside>
 
           {selected ? (

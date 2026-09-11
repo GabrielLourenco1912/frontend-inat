@@ -1,3 +1,4 @@
+import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -103,10 +104,10 @@ export default async function OrganizationDetailPage({
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <Sheet>
           <SectionHeading title="Aprendizes vinculados" icon="graduation" />
-          {relatedLearners.length ? <div className="divide-y divide-[var(--inat-line)]">{relatedLearners.map((learner) => {
+          {relatedLearners.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{relatedLearners.map((learner) => {
             const contract = contracts.find((item) => item.learnerId === learner.id);
             return <Link key={learner.id} href={`/sistema/aprendizes/${learner.id}`} className="flex items-center gap-3 p-4 hover:bg-[var(--inat-mist)]/35 sm:px-5"><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{learnerPersonMap.get(learner.id) || learner.registrationNumber}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{contract ? formatPeriod(contract.startDate, contract.endDate) : "Contrato relacionado"}</p></div><StatusMark>{apiLabel(learner.status)}</StatusMark></Link>;
-          })}</div> : <EmptyState title="Nenhum aprendiz relacionado" description="Não há contratos desta organização vinculados a aprendizes." icon="graduation" />}
+          })}</PaginatedContent></div> : <EmptyState title="Nenhum aprendiz relacionado" description="Não há contratos desta organização vinculados a aprendizes." icon="graduation" />}
         </Sheet>
         {admin ? <OrganizationMembershipManager organizationId={organization.id} memberships={memberships} people={people} /> : <Sheet><SectionHeading title="Membros da organização" description="A função de negócio não substitui o papel de acesso ao sistema." icon="people" /><EmptyState title="Membros protegidos" description="A listagem de vínculos é restrita à administração no backend." icon="shield" /></Sheet>}
       </div>

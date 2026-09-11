@@ -1,5 +1,6 @@
 "use client";
 
+import { apiCatalog } from "@/lib/api/catalog";
 import { ApprenticeshipWorkloadField } from "@/components/portal/ApprenticeshipWorkloadField";
 import { apprenticeshipWorkloadMinutes } from "@/lib/apprenticeship/policy";
 import { useRouter } from "next/navigation";
@@ -26,12 +27,22 @@ type ModalProps = {
   children: (close: () => void) => ReactNode;
   disabled?: boolean;
   icon?: "plus" | "edit";
+  beforeOpen?: () => Promise<void>;
 };
 
-function CreatorModal({ title, trigger, children, disabled, icon = "plus" }: ModalProps) {
+function CreatorModal({ title, trigger, children, disabled, icon = "plus", beforeOpen }: ModalProps) {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  async function openModal() {
+    setLoading(true); setLoadError("");
+    try { await beforeOpen?.(); setOpen(true); }
+    catch (error) { setLoadError(requestErrorMessage(error, "Não foi possível carregar as opções do cadastro.")); }
+    finally { setLoading(false); }
+  }
   return <>
-    <button type="button" onClick={() => setOpen(true)} disabled={disabled} className="portal-button portal-button-primary disabled:cursor-not-allowed disabled:opacity-50"><Icon name={icon} className="size-4" />{trigger}</button>
+    <button type="button" onClick={openModal} disabled={disabled || loading} className="portal-button portal-button-primary disabled:cursor-not-allowed disabled:opacity-50"><Icon name={icon} className="size-4" />{loading ? "Carregando..." : trigger}</button>
+    {loadError ? <p role="alert" className="mt-2 text-sm text-rose-700">{loadError}</p> : null}
     {open ? <div className="fixed inset-0 z-[100] grid place-items-center bg-[var(--inat-ink)]/70 p-4" role="dialog" aria-modal="true"><div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto border border-[var(--inat-line)] bg-white shadow-2xl"><div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--inat-line)] bg-white px-5 py-4"><h2 className="text-lg font-semibold">{title}</h2><button type="button" onClick={() => setOpen(false)} className="text-xl" aria-label="Fechar">×</button></div>{children(() => setOpen(false))}</div></div> : null}
   </>;
 }
@@ -118,9 +129,10 @@ function RequestForm({ close, success, endpoint, successLabel, build, children, 
   return <form onSubmit={submit}>{error ? <p role="alert" className="mx-5 mt-5 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}<div className="grid gap-5 p-5">{children}</div><FormFooter close={close} saving={saving} label={successLabel} /></form>;
 }
 
-export function OrganizationCreator({ organizations }: { organizations: Organization[] }) {
+export function OrganizationCreator({ organizations: initialOrganizations }: { organizations?: Organization[] }) {
   const router = useRouter();
-  return <CreatorModal title="Cadastrar organização" trigger="Nova organização">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/organizations" successLabel="Cadastrar organização" build={(form) => ({
+  const [organizations, setOrganizations] = useState(initialOrganizations ?? []);
+  return <CreatorModal title="Cadastrar organização" trigger="Nova organização" beforeOpen={async () => { if (!initialOrganizations) setOrganizations(await apiCatalog<Organization>("/api/backend/organizations")); }}>{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/organizations" successLabel="Cadastrar organização" build={(form) => ({
     parentOrganizationId: String(form.get("parentOrganizationId") ?? "") || null,
     address: addressFrom(form),
     organizationType: String(form.get("organizationType")) as OrganizationType,

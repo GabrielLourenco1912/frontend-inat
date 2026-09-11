@@ -1,5 +1,6 @@
 "use client";
 
+import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
@@ -437,6 +438,7 @@ function AttendanceBoard({
         </p>
       ) : null}
       <div className="divide-y divide-[var(--inat-line)] border border-[var(--inat-line)] bg-white">
+        <PaginatedContent resetKey={query}>
         {visible.map((row) => {
           const usesTime = ["PRESENT", "LATE", "PARTIAL"].includes(row.status);
           const rowLocked = locked || row.participant.status === "CANCELLED";
@@ -519,6 +521,7 @@ function AttendanceBoard({
             </article>
           );
         })}
+        </PaginatedContent>
       </div>
       {!locked ? (
         <div className="flex justify-end">
@@ -1065,6 +1068,7 @@ export function LessonWorkspace({
           ) : null}
           {participants.length ? (
             <div className="divide-y divide-[var(--inat-line)]">
+              <PaginatedContent>
               {participants.map((participant) => (
                 <div
                   key={participant.id}
@@ -1085,6 +1089,7 @@ export function LessonWorkspace({
                   </div>
                 </div>
               ))}
+              </PaginatedContent>
             </div>
           ) : (
             <EmptyState
@@ -1120,6 +1125,7 @@ export function LessonWorkspace({
           ) : null}
           {activities.length ? (
             <div className="divide-y divide-[var(--inat-line)]">
+              <PaginatedContent>
               {activities.map((activity) => (
                 <Link
                   key={activity.id}
@@ -1135,6 +1141,7 @@ export function LessonWorkspace({
                   <StatusMark>{apiLabel(activity.status)}</StatusMark>
                 </Link>
               ))}
+              </PaginatedContent>
             </div>
           ) : (
             <EmptyState

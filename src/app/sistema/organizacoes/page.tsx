@@ -1,14 +1,17 @@
+import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { accessibleOrganizationsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { OrganizationCreator } from "@/components/portal/ResourceCreators";
 import { can } from "@/domain/auth";
 import { apiLabel, maskTaxId } from "@/lib/api/format";
 import { requireCapability } from "@/lib/auth/session";
-import { accessibleOrganizations } from "@/lib/portal/data";
 
-export default async function OrganizationsPage() {
+export default async function OrganizationsPage({ searchParams }: ListPageProps) {
+  const query = await searchParams ?? {};
   const actor = await requireCapability("organizations:read");
-  const organizations = await accessibleOrganizations(actor);
+  const page = await accessibleOrganizationsPage(actor, query);
+  const organizations = page.content;
   const records = organizations.map((organization) => ({
     id: organization.id,
     href: `/sistema/organizacoes/${organization.id}`,
@@ -21,8 +24,8 @@ export default async function OrganizationsPage() {
   }));
   return (
     <>
-      <PageHeader eyebrow="Parcerias" title="Organizações" description="Empresas e escolas parceiras, com vínculos e contratos relacionados." action={can(actor, "organizations:manage") ? <OrganizationCreator organizations={organizations} /> : undefined} />
-      <DataList
+      <PageHeader eyebrow="Parcerias" title="Organizações" description="Empresas e escolas parceiras, com vínculos e contratos relacionados." action={can(actor, "organizations:manage") ? <OrganizationCreator /> : undefined} />
+      <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}
         itemLabel="organização"
         searchPlaceholder="Buscar organização, CNPJ ou cidade"

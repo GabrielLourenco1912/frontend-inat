@@ -1,23 +1,32 @@
+"use client";
+
+import { ListPagination } from "@/components/design-system/ListPagination";
+import { useClientPagination } from "@/components/design-system/ClientPagination";
+import type { Pagination } from "@/lib/pagination";
 import type { ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { EmptyState } from "@/components/design-system/PortalPrimitives";
 import type { StoredFile } from "@/lib/api/domain-contracts";
 import { formatFileSize } from "@/lib/api/format";
 
-export function DocumentWorkspace({ items, selectedId, onSelect, children, emptyTitle, emptyDescription }: {
+export function DocumentWorkspace({ items, selectedId, onSelect, children, emptyTitle, emptyDescription, pagination }: {
   items: { id: string; title: string; subtitle: string; detail: string; status: ReactNode }[];
   selectedId?: string;
   onSelect: (id: string) => void;
   children: ReactNode;
+  pagination?: Pagination;
   emptyTitle: string;
   emptyDescription: string;
 }) {
-  if (!items.length) return <EmptyState title={emptyTitle} description={emptyDescription} icon="document" />;
+  const local = useClientPagination(items, "", items.findIndex((item) => item.id === selectedId));
+  const visible = pagination ? items : local.items;
+  const controls = pagination ? <ListPagination shown={items.length} {...pagination} /> : local.controls;
+  if (!items.length) return <><EmptyState title={emptyTitle} description={emptyDescription} icon="document" />{controls}{children}</>;
   return (
     <div className="lg:grid lg:min-h-[32rem] lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.6fr)]">
       <div className="border-b border-[var(--inat-line)] lg:border-b-0 lg:border-r">
         <ul aria-label="Documentos disponíveis" className="divide-y divide-[var(--inat-line)]">
-          {items.map((item) => (
+          {visible.map((item) => (
             <li key={item.id}>
               <button type="button" aria-pressed={selectedId === item.id} onClick={() => onSelect(item.id)} className={`w-full border-l-[3px] p-4 text-left sm:p-5 ${selectedId === item.id ? "border-l-[var(--inat-clay)] bg-[var(--inat-mist)]" : "border-l-transparent hover:bg-[var(--inat-paper)]"}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -30,6 +39,7 @@ export function DocumentWorkspace({ items, selectedId, onSelect, children, empty
             </li>
           ))}
         </ul>
+        {controls}
       </div>
       <section aria-label="Detalhes do documento" className="min-w-0">{children}</section>
     </div>
