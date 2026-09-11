@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Icon } from "@/components/design-system/Icon";
+import { Icon, type IconName } from "@/components/design-system/Icon";
+import { ListPagination, type ListPaginationProps } from "@/components/design-system/ListPagination";
 import { EmptyState, StatusMark } from "@/components/design-system/PortalPrimitives";
 
 export type DataRecord = {
@@ -26,6 +27,9 @@ export function DataList({
   statusKey = "state",
   itemLabel = "registro",
   localSearchNote = true,
+  searchable = true,
+  pagination,
+  emptyIcon,
   emptyTitle,
   emptyDescription,
 }: {
@@ -35,6 +39,9 @@ export function DataList({
   statusKey?: string;
   itemLabel?: string;
   localSearchNote?: boolean;
+  searchable?: boolean;
+  pagination?: Omit<ListPaginationProps, "shown">;
+  emptyIcon?: IconName;
   emptyTitle?: string;
   emptyDescription?: string;
 }) {
@@ -70,7 +77,7 @@ export function DataList({
 
   return (
     <div className="border border-[var(--inat-line)] bg-white">
-      <div className="flex flex-col gap-3 border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+      {searchable ? <div className="flex flex-col gap-3 border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Icon
             name="search"
@@ -113,9 +120,9 @@ export function DataList({
             {filtered.length} {filtered.length === 1 ? itemLabel : `${itemLabel}s`}
           </span>
         </div>
-      </div>
+      </div> : null}
 
-      {localSearchNote ? (
+      {searchable && localSearchNote ? (
         <div className="border-b border-[var(--inat-line)] bg-white px-4 py-2 text-[0.6875rem] leading-4 text-[var(--inat-muted)]">
           A busca filtra somente os registros carregados nesta página.
         </div>
@@ -249,16 +256,11 @@ export function DataList({
               ? emptyDescription ?? "Ainda não há registros cadastrados no backend."
               : "Revise os termos da busca ou remova o filtro de estado."
           }
-          icon={records.length === 0 ? "folder" : "search"}
+          icon={emptyIcon ?? (records.length === 0 ? "folder" : "search")}
         />
       )}
 
-      <div className="flex items-center justify-between border-t border-[var(--inat-line)] px-4 py-3 text-xs text-[var(--inat-muted)]">
-        <span>
-          Mostrando {filtered.length} de {records.length}
-        </span>
-        <span className="font-mono">Página 1 de 1</span>
-      </div>
+      <ListPagination shown={filtered.length} total={records.length} {...pagination} />
     </div>
   );
 }

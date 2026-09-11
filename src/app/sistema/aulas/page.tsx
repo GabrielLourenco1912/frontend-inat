@@ -6,18 +6,20 @@ import { hasRole } from "@/domain/auth";
 import { apiLabel, formatDateTimePeriod } from "@/lib/api/format";
 import { serverApiAll } from "@/lib/api/server";
 import type { Cohort, Person } from "@/lib/api/domain-contracts";
+import type { UserResponse } from "@/lib/api/contracts";
 import { requireCapability } from "@/lib/auth/session";
 import { accessibleLessons } from "@/lib/portal/data";
 
 export default async function LessonsPage() {
   const actor = await requireCapability("lessons:read");
   const lessons = await accessibleLessons(actor);
-  const [cohorts, people] = hasRole(actor, "ADMIN")
+  const [cohorts, people, users] = hasRole(actor, "ADMIN")
     ? await Promise.all([
         serverApiAll<Cohort>("/api/cohorts"),
         serverApiAll<Person>("/api/people"),
+        serverApiAll<UserResponse>("/api/users"),
       ])
-    : [[], []];
+    : [[], [], []];
   const cohortNames = new Map(cohorts.map((cohort) => [cohort.id, cohort.code]));
   const personNames = new Map(people.map((person) => [person.id, person.fullName]));
   const records = lessons.map((lesson) => ({
@@ -39,7 +41,7 @@ export default async function LessonsPage() {
         eyebrow="Acadêmico"
         title="Aulas e chamada"
         description="Aulas organizadas por data, turma e próxima ação operacional."
-        action={can(actor, "lessons:manage") ? <LessonCreator cohorts={cohorts} people={people} /> : undefined}
+        action={can(actor, "lessons:manage") ? <LessonCreator cohorts={cohorts} people={people} users={users} /> : undefined}
       />
       <DataList
         records={records}

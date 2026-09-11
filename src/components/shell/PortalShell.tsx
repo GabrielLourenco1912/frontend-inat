@@ -56,7 +56,7 @@ const navigation: NavGroup[] = [
   {
     label: "Operação",
     items: [
-      { label: "Documentos", href: "/sistema/documentos", icon: "document", capability: "documents:read" },
+      { label: "Documentos expirados", href: "/sistema/documentos", icon: "document", capability: "documents:read" },
       { label: "Comunicações", href: "/sistema/comunicacoes", icon: "message", capability: "communications:manage" },
     ],
   },
@@ -80,7 +80,7 @@ const pathLabels: Record<string, string> = {
   organizacoes: "Organizações",
   contratos: "Contratos",
   turmas: "Turmas",
-  documentos: "Documentos",
+  documentos: "Documentos expirados",
   comunicacoes: "Comunicações",
   avisos: "Avisos",
   "minha-conta": "Minha conta",

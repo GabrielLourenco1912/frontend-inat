@@ -156,14 +156,16 @@ export function SectionHeading({
   description,
   action,
   icon,
+  stackOnMobile = false,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   icon?: IconName;
+  stackOnMobile?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[var(--inat-line)] px-4 py-4 sm:px-5">
+    <div className={`flex items-start justify-between gap-4 border-b border-[var(--inat-line)] px-4 py-4 sm:px-5 ${stackOnMobile ? "flex-col sm:flex-row" : ""}`}>
       <div className="flex min-w-0 gap-3">
         {icon ? (
           <span className="grid size-9 shrink-0 place-items-center bg-[var(--inat-mist)] text-[var(--inat-teal-dark)]">

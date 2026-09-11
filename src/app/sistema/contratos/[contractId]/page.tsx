@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ContractDocumentManager } from "@/components/portal/ContractDocumentManager";
+import { DetailTabs } from "@/components/portal/DetailTabs";
 import { ContractLifecycleManager } from "@/components/portal/LifecycleManagers";
 import {
   DefinitionList,
@@ -20,15 +21,19 @@ import { apiLabel, formatCurrency, formatMinutes, formatPeriod } from "@/lib/api
 import { serverApiAll, serverApiGetOrNull } from "@/lib/api/server";
 import { requireCapability } from "@/lib/auth/session";
 import { accessibleLearners, accessibleOrganizations } from "@/lib/portal/data";
+import { firstQueryValue } from "@/lib/documents/navigation";
 
 export default async function ContractDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ contractId: string }>;
+  searchParams: Promise<{ tab?: string | string[]; document?: string | string[] }>;
 }) {
-  const [actor, { contractId }] = await Promise.all([
+  const [actor, { contractId }, query] = await Promise.all([
     requireCapability("contracts:read"),
     params,
+    searchParams,
   ]);
   const contract = await serverApiGetOrNull<Contract>(
     `/api/contracts/${encodeURIComponent(contractId)}`,
@@ -36,16 +41,17 @@ export default async function ContractDetailPage({
   if (!contract) notFound();
 
   const admin = hasRole(actor, "ADMIN");
+  const tab = firstQueryValue(query.tab) === "documentos" ? "documentos" : "dados";
   const [learners, organizations, people, documents, documentTypes] = await Promise.all([
     accessibleLearners(actor),
     accessibleOrganizations(actor),
     admin ? serverApiAll<Person>("/api/people") : Promise.resolve([]),
-    admin
-      ? serverApiAll<ContractDocument>("/api/contract-documents").then((items) =>
-          items.filter((document) => document.contractId === contract.id),
+    admin && tab === "documentos"
+      ? serverApiAll<ContractDocument>(
+          `/api/contract-documents?contractId=${encodeURIComponent(contract.id)}`,
         )
       : Promise.resolve([]),
-    admin ? serverApiAll<DocumentType>("/api/document-types") : Promise.resolve([]),
+    admin && tab === "documentos" ? serverApiAll<DocumentType>("/api/document-types") : Promise.resolve([]),
   ]);
   const learner = learners.find((item) => item.id === contract.learnerId);
   const person = learner
@@ -75,6 +81,8 @@ export default async function ContractDetailPage({
         backLabel="Voltar para contratos"
         action={<StatusMark>{apiLabel(contract.status)}</StatusMark>}
       />
+      <DetailTabs activeTab={tab} tabs={[{ id: "dados", label: "Dados contratuais" }, { id: "documentos", label: "Documentos" }]} label="Seções do contrato" />
+      {tab === "dados" ? <>
       <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
         <Sheet>
           <SectionHeading title="Dados contratuais" icon="briefcase" />
@@ -99,9 +107,7 @@ export default async function ContractDetailPage({
         </Sheet>
       </div>
       {admin ? <div className="mt-5"><ContractLifecycleManager contract={contract} today={today} /></div> : null}
-      <div className="mt-5">
-        {admin ? <ContractDocumentManager contractId={contract.id} contractStatus={contract.status} documents={documents} documentTypes={documentTypes} /> : <Sheet><EmptyState title="Documentos contratuais protegidos" description="O backend restringe versões e binários contratuais à administração." icon="shield" /></Sheet>}
-      </div>
+      </> : admin ? <ContractDocumentManager key={`${contract.id}:${firstQueryValue(query.document) ?? ""}`} contractId={contract.id} contractStatus={contract.status} documents={documents} documentTypes={documentTypes} initialDocumentId={firstQueryValue(query.document)} /> : <Sheet><EmptyState title="Documentos contratuais protegidos" description="O backend restringe versões e binários contratuais à administração." icon="shield" /></Sheet>}
     </>
   );
 }
