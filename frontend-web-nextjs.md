@@ -1,6 +1,6 @@
 # Frontend web INAT — integração com a API
 
-Este documento descreve o estado implementado do portal Next.js. O frontend não possui fixtures acadêmicas nem modo mock: todos os dados do sistema vêm do backend, e uma coleção vazia é apresentada como estado vazio real.
+Este documento descreve a integração real do portal Next.js na branch `develop`: todos os dados do sistema vêm do backend, e uma coleção vazia é apresentada como estado vazio real. A branch `develop-mock` mantém a mesma interface com adaptadores de demonstração. Consulte [o fluxo das branches](./docs/branch-workflow.md) para as diferenças de execução.
 
 ## 1. Configuração
 
@@ -17,7 +17,7 @@ FRONTEND_AUTH_COOKIE_SECURE=false
 - `FRONTEND_AUTH_COOKIE_SECURE=false` é útil apenas em HTTP local. Em produção com HTTPS, usar `true` ou deixar a detecção automática.
 - Para o refresh cookie funcionar em HTTP local, o backend também precisa de `API_SECURITY_REFRESH_COOKIE_SECURE=false`.
 
-Não há variável de seleção de mock e não há bootstrap de dados no frontend.
+Não há variável de seleção de mock: os adaptadores são definidos pela branch. Na `develop`, não há bootstrap de dados no frontend.
 
 ## 2. Papéis válidos
 
@@ -184,7 +184,7 @@ Os canais expostos no portal são `IN_APP` e `EMAIL`. A contagem no shell vem de
 
 ## 10. Estado vazio e povoamento
 
-O frontend não cria dados automaticamente, não importa fixtures e não transforma uma lista vazia em cenário demonstrativo. Cada módulo mostra um estado vazio específico.
+Na `develop`, o frontend não cria dados automaticamente, não importa fixtures em execução e não transforma uma lista vazia em cenário demonstrativo. Cada módulo mostra um estado vazio específico. As fixtures compartilhadas são usadas pelos testes e pelos adaptadores da `develop-mock`.
 
 O povoamento inicial será definido separadamente. Até lá, a integração está preparada para uma base vazia, mas será necessário criar por meio administrativo ao menos:
 

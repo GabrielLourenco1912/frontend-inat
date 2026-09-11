@@ -11,7 +11,7 @@ Turmas continuam mistas. A restrição pertence à participação online, não �
 
 A política de apresentação está em `src/lib/apprenticeship/policy.ts`. A data da aula usa `America/Sao_Paulo`, como o backend.
 
-Esta branch `develop-mock` mantém seu comportamento anterior: leituras vêm dos dados de demonstração e mutações simuladas não persistem registros. As garantias transacionais e a geração de participantes são implementadas no backend real, não no adaptador mock.
+Na `develop-mock`, leituras vêm dos dados de demonstração e mutações simuladas não persistem registros. Na `develop`, as operações usam a integração real. As garantias transacionais e a geração de participantes são implementadas no backend, não no adaptador mock. A interface e os filtros são compartilhados pelas duas branches.
 
 ## Verificação
 
