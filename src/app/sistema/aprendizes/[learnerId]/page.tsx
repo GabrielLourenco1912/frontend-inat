@@ -18,6 +18,7 @@ import type {
 } from "@/lib/api/domain-contracts";
 import { serverApiAll, serverApiGet, serverApiGetOrNull } from "@/lib/api/server";
 import { requireCapability } from "@/lib/auth/session";
+import { firstQueryValue } from "@/lib/documents/navigation";
 import {
   accessibleActivities,
   accessibleContracts,
@@ -27,12 +28,15 @@ import {
 
 export default async function LearnerDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ learnerId: string }>;
+  searchParams: Promise<{ tab?: string | string[]; document?: string | string[] }>;
 }) {
-  const [actor, { learnerId }] = await Promise.all([
+  const [actor, { learnerId }, query] = await Promise.all([
     requireCapability("learners:read"),
     params,
+    searchParams,
   ]);
   const learner = await serverApiGetOrNull<Learner>(
     `/api/learners/${encodeURIComponent(learnerId)}`,
@@ -141,10 +145,11 @@ export default async function LearnerDetailPage({
       .filter((record) => record.learnerId === learner.id);
   }
 
-  const [documents, documentTypes] = admin
+  const activeTab = firstQueryValue(query.tab) ?? "dados";
+  const [documents, documentTypes] = admin && activeTab === "documentos"
     ? await Promise.all([
-        serverApiAll<PersonDocument>("/api/person-documents").then((items) =>
-          items.filter((document) => document.personId === learner.personId),
+        serverApiAll<PersonDocument>(
+          `/api/person-documents?personId=${encodeURIComponent(learner.personId)}`,
         ),
         serverApiAll<DocumentType>("/api/document-types"),
       ])
@@ -152,6 +157,8 @@ export default async function LearnerDetailPage({
 
   return (
     <LearnerDossier
+      activeTab={activeTab}
+      initialDocumentId={firstQueryValue(query.document)}
       learner={learner}
       person={person}
       displayName={person?.fullName ?? (learnerSelf ? actor.name : learner.registrationNumber)}

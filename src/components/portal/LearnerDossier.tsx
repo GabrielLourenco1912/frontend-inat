@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { DetailTabs } from "@/components/portal/DetailTabs";
+import { PersonDocumentManager } from "@/components/portal/PersonDocumentManager";
 import {
   DefinitionList,
   EmptyState,
@@ -45,6 +46,8 @@ type DossierTab =
   | "documentos";
 
 type Props = {
+  activeTab: string;
+  initialDocumentId?: string;
   learner: Learner;
   person: Person | null;
   displayName: string;
@@ -74,15 +77,13 @@ export function LearnerDossier(props: Props) {
     learner, person, displayName, contracts, organizations, guardians,
     enrollments, cohorts, lessons, attendance, activities, submissions,
     documents, documentTypes, canSeeDocuments, canSeeSensitiveContract,
-    canSeeGuardians, canManage,
+    canSeeGuardians, canManage, activeTab, initialDocumentId,
   } = props;
-  const [tab, setTab] = useState<DossierTab>("dados");
   const organizationMap = new Map(organizations.map((item) => [item.id, item.tradeName || item.legalName]));
   const cohortMap = new Map(cohorts.map((item) => [item.id, item]));
   const lessonMap = new Map(lessons.map((item) => [item.id, item]));
   const submissionMap = new Map(submissions.map((item) => [item.activityId, item]));
   const attendanceMap = new Map(attendance.map((item) => [item.lessonId, item]));
-  const documentTypeMap = new Map(documentTypes.map((item) => [item.id, item.name]));
   const tabs: { id: DossierTab; label: string }[] = [
     { id: "dados", label: "Dados pessoais" },
     ...(canSeeGuardians ? [{ id: "responsaveis" as const, label: "Responsáveis" }] : []),
@@ -92,6 +93,7 @@ export function LearnerDossier(props: Props) {
     { id: "atividades", label: "Atividades" },
     ...(canSeeDocuments ? [{ id: "documentos" as const, label: "Documentos" }] : []),
   ];
+  const tab = tabs.some((item) => item.id === activeTab) ? activeTab : "dados";
   const initials = displayName.split(" ").filter(Boolean).map((part) => part[0]).slice(0, 2).join("").toUpperCase();
 
   return (
@@ -111,11 +113,7 @@ export function LearnerDossier(props: Props) {
         {canManage ? <span className="ml-auto text-xs text-[var(--inat-muted)]">Cadastro administrável pela equipe INAT</span> : null}
       </div>
 
-      <div className="overflow-x-auto border-b border-[var(--inat-line)]">
-        <div className="flex min-w-max" role="tablist" aria-label="Seções do dossiê">
-          {tabs.map((item) => <button key={item.id} type="button" onClick={() => setTab(item.id)} role="tab" aria-selected={tab === item.id} className={`relative min-h-11 px-4 text-sm font-semibold ${tab === item.id ? "text-[var(--inat-teal-dark)]" : "text-[var(--inat-muted)]"}`}>{item.label}{tab === item.id ? <span className="absolute inset-x-3 bottom-0 h-0.5 bg-[var(--inat-clay)]" /> : null}</button>)}
-        </div>
-      </div>
+      <DetailTabs activeTab={tab} tabs={tabs} label="Seções do dossiê" />
 
       <div className="mt-5">
         {tab === "dados" ? <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
@@ -152,7 +150,7 @@ export function LearnerDossier(props: Props) {
 
         {tab === "atividades" ? <Sheet><SectionHeading title="Atividades e entregas" icon="clipboard" />{activities.length ? <div className="divide-y divide-[var(--inat-line)]">{activities.map((activity) => { const submission = submissionMap.get(activity.id); const lesson = lessonMap.get(activity.lessonId); return <Link key={activity.id} href={`/sistema/atividades/${activity.id}`} className="flex items-center gap-4 p-4 hover:bg-[var(--inat-mist)]/35 sm:p-5"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{activity.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{lesson?.title ?? activity.lessonId} · prazo {formatDateTime(activity.dueAt)}</p></div><StatusMark>{submission ? apiLabel(submission.status) : "Sem entrega"}</StatusMark></Link>; })}</div> : <EmptyPanel title="Nenhuma atividade acessível" description="Não há atividades relacionadas às aulas disponíveis." icon="clipboard" />}</Sheet> : null}
 
-        {tab === "documentos" && canSeeDocuments ? <Sheet><SectionHeading title="Documentos pessoais" description="Arquivos armazenados no filesystem e metadados registrados no backend." icon="document" />{documents.length ? <div className="divide-y divide-[var(--inat-line)]">{documents.map((document) => <Link key={document.id} href="/sistema/documentos" className="flex items-center gap-4 p-4 hover:bg-[var(--inat-mist)]/35 sm:p-5"><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{documentTypeMap.get(document.documentTypeId) ?? `Tipo ${document.documentTypeId}`}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{document.file.originalName} · validade {formatDate(document.expiresOn)}</p></div><StatusMark>{apiLabel(document.verificationStatus)}</StatusMark></Link>)}</div> : <EmptyPanel title="Nenhum documento pessoal" description="Não há documentos anexados a esta pessoa." icon="document" />}</Sheet> : null}
+        {tab === "documentos" && canSeeDocuments ? person ? <PersonDocumentManager key={`${person.id}:${initialDocumentId ?? ""}`} person={person} documents={documents} documentTypes={documentTypes} initialDocumentId={initialDocumentId} /> : <Sheet><EmptyState title="Cadastro da pessoa indisponível" description="Não foi possível carregar a pessoa vinculada a este aprendiz." icon="person" /></Sheet> : null}
       </div>
     </>
   );

@@ -540,13 +540,16 @@ export const submissionFiles: SubmissionFile[] = portalSubmissions.map((submissi
   createdAt: CREATED_AT,
 }));
 
-export const documentTypes: DocumentType[] = portalDocumentTypes.map((type, index) => ({
-  id: index + 1,
-  code: type.code,
-  name: type.name,
-  description: type.description,
-  scope: type.code === "ASO" ? "BOTH" : "PERSON",
-}));
+export const documentTypes: DocumentType[] = [
+  ...portalDocumentTypes.map((type, index): DocumentType => ({
+    id: index + 1,
+    code: type.code,
+    name: type.name,
+    description: type.description,
+    scope: type.code === "ASO" ? "BOTH" : "PERSON",
+  })),
+  { id: portalDocumentTypes.length + 1, code: "CONTRATO_APRENDIZAGEM", name: "Contrato de aprendizagem", description: "Instrumento contratual e suas versões.", scope: "CONTRACT" },
+];
 
 const documentStatuses: Record<string, PersonDocument["verificationStatus"]> = {
   Pendente: "VERIFIED",
@@ -585,7 +588,12 @@ export const personDocuments: PersonDocument[] = portalDocuments.map((document, 
   return {
     id: document.id,
     personId: personId(document.person),
-    file: storedFiles[index % storedFiles.length],
+    file: {
+      ...storedFiles[index % storedFiles.length],
+      id: `file-${document.id}`,
+      originalName: `${slug(document.type)}-${slug(document.person)}.pdf`,
+      mimeType: "application/pdf",
+    },
     documentTypeId: documentType.id,
     documentNumber: document.number === "—" ? null : document.number,
     issuedOn: null,
@@ -602,10 +610,13 @@ export const personDocuments: PersonDocument[] = portalDocuments.map((document, 
 export const contractDocuments: ContractDocument[] = contracts.map((contract, index) => ({
   id: `doc-contrato-${index + 1}`,
   contractId: contract.id,
-  file: storedFiles[index % storedFiles.length],
-  documentTypeId: documentTypes.find(
-    (type) => type.scope === "CONTRACT" || type.scope === "BOTH",
-  )?.id ?? documentTypes[index % documentTypes.length].id,
+  file: {
+    ...storedFiles[index % storedFiles.length],
+    id: `file-contrato-${index + 1}`,
+    originalName: `contrato-aprendizagem-${index + 1}-v1.pdf`,
+    mimeType: "application/pdf",
+  },
+  documentTypeId: documentTypes.find((type) => type.code === "CONTRATO_APRENDIZAGEM")!.id,
   versionNumber: 1,
   current: true,
   createdAt: CREATED_AT,
@@ -828,6 +839,29 @@ export function mockApiGet(path: string): MockApiResult {
   const [resource, id, relation] = segments;
 
   if (resource === "me") return { status: 200, data: mockCurrentUser };
+  if (resource === "person-documents" && !id) {
+    const personId = url.searchParams.get("personId");
+    const status = url.searchParams.get("verificationStatus");
+    if (status !== null && status !== "VERIFIED" && status !== "EXPIRED") {
+      return { status: 400, data: null, message: "Situação do documento inválida" };
+    }
+    const documents = personDocuments.filter((document) =>
+      (personId === null || document.personId === personId)
+      && (status === null || document.verificationStatus === status),
+    ).sort((a, b) => (status === "EXPIRED"
+      ? (a.expiresOn ?? "").localeCompare(b.expiresOn ?? "")
+      : b.createdAt.localeCompare(a.createdAt)) || a.id.localeCompare(b.id));
+    return { status: 200, data: page(documents, url.searchParams) };
+  }
+  if (resource === "contract-documents" && !id) {
+    const contractId = url.searchParams.get("contractId");
+    const documents = contractDocuments.filter((document) => contractId === null || document.contractId === contractId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
+    return { status: 200, data: page(documents, url.searchParams) };
+  }
+  if (resource === "learners" && !id && url.searchParams.has("personId")) {
+    return { status: 200, data: page(learners.filter((learner) => learner.personId === url.searchParams.get("personId")), url.searchParams) };
+  }
   if (resource === "people" && !id && url.searchParams.has("personType")) {
     const type = url.searchParams.get("personType") ?? "";
     if (!PERSON_TYPE_OPTIONS.some(({ code }) => code === type)) {
