@@ -23,6 +23,7 @@ import type {
   Organization,
   OrganizationMembership,
   Person,
+  PersonTypeCode,
   PersonDocument,
   RoleRecord,
   StoredFile,
@@ -30,6 +31,7 @@ import type {
   UserRole,
 } from "@/lib/api/domain-contracts";
 import type { Actor, Role } from "@/domain/auth";
+import { PERSON_TYPE_OPTIONS, hasPersonType } from "@/lib/people/person-types";
 import {
   MOCK_TODAY,
   activities as portalActivities,
@@ -151,6 +153,7 @@ for (const person of portalPeople) {
     birthDate: learner ? birthDates[learner.birthDate] ?? "2000-01-01" : "1985-01-01",
     gender: null,
     status: person.state === "Ativa" ? "ACTIVE" : "INACTIVE",
+    personTypes: [],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   });
@@ -169,6 +172,7 @@ for (const person of extraPersonSeeds) {
     birthDate: birthDates[person.birthDate] ?? "1990-01-01",
     gender: null,
     status: "ACTIVE",
+    personTypes: [],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   });
@@ -732,6 +736,19 @@ export const organizationMemberships: OrganizationMembership[] = [
   },
 ];
 
+function assignPersonType(id: string, code: string) {
+  const person = people.find((item) => item.id === id);
+  if (person && PERSON_TYPE_OPTIONS.some((type) => type.code === code) && !hasPersonType(person, code)) {
+    person.personTypes.push(code as PersonTypeCode);
+  }
+}
+
+for (const user of users) for (const role of user.roles) assignPersonType(user.personId, role);
+for (const learner of learners) assignPersonType(learner.personId, "LEARNER");
+for (const guardian of learnerGuardians) assignPersonType(guardian.guardianPersonId, "GUARDIAN");
+for (const lesson of lessons) assignPersonType(lesson.instructorPersonId, "INSTRUCTOR");
+for (const membership of organizationMemberships) assignPersonType(membership.personId, membership.membershipRole);
+
 const adminUser = users.find((user) => user.id === ADMIN_USER_ID) ?? users[0];
 
 export const mockCurrentUser: CurrentUserContextResponse = {
@@ -811,6 +828,13 @@ export function mockApiGet(path: string): MockApiResult {
   const [resource, id, relation] = segments;
 
   if (resource === "me") return { status: 200, data: mockCurrentUser };
+  if (resource === "people" && !id && url.searchParams.has("personType")) {
+    const type = url.searchParams.get("personType") ?? "";
+    if (!PERSON_TYPE_OPTIONS.some(({ code }) => code === type)) {
+      return { status: 400, data: null, message: "Tipo de pessoa inválido" };
+    }
+    return { status: 200, data: page(people.filter((person) => hasPersonType(person, type)), url.searchParams) };
+  }
   if (resource === "lessons" && id === "me") return { status: 200, data: lessons };
   if (resource === "notification-recipients" && id === "me" && relation === "unread-count") {
     return {

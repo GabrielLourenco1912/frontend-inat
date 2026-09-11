@@ -18,6 +18,7 @@ import {
 } from "@/lib/api/client";
 import type { Person, RoleRecord, UserRole } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime } from "@/lib/api/format";
+import { hasPersonType } from "@/lib/people/person-types";
 
 type UserAccountManagerProps = {
   users: UserResponse[];
@@ -92,6 +93,9 @@ export function UserAccountManager({
   const [message, setMessage] = useState("");
 
   const selected = users.find((user) => user.id === selectedId) ?? users[0];
+  const selectedPerson = people.find((person) => person.id === selected?.personId);
+  const availableRoles = roles.filter((role) => hasPersonType(selectedPerson, role.code)
+    || selected?.roles.some((assigned) => assigned === role.code));
   const loginEmailChanged = selected
     ? normalizeEmail(loginEmail) !== normalizeEmail(selected.loginEmail)
     : false;
@@ -475,10 +479,11 @@ export function UserAccountManager({
                   </legend>
                   <p className="mb-4 text-xs leading-5 text-[var(--inat-muted)]">
                     Papéis podem ficar pré-atribuídos, mas só concedem acesso
-                    enquanto a conta estiver ativa.
+                    enquanto a conta estiver ativa. Novos papéis exigem o tipo correspondente
+                    no cadastro da pessoa.
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {roles.map((role) => (
+                    {availableRoles.map((role) => (
                       <label
                         key={role.id}
                         className="flex items-start gap-3 text-sm"

@@ -1,4 +1,5 @@
 export type RecordStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+export type PersonTypeCode = "ADMIN" | "INSTRUCTOR" | "LEARNER" | "EMPLOYER_MANAGER" | "GUARDIAN";
 export type OrganizationType = "EMPLOYER" | "SCHOOL";
 export type CohortStatus = "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type EnrollmentStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
@@ -56,6 +57,7 @@ export type Person = {
   birthDate: string;
   gender: string | null;
   status: RecordStatus;
+  personTypes: PersonTypeCode[];
   createdAt: string;
   updatedAt: string;
 };

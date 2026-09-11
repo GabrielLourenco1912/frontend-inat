@@ -24,3 +24,9 @@ npm run build
 Não há fixtures nem bootstrap no frontend. Uma base sem registros produz estados vazios reais. A criação de contas ocorre somente pelo cadastro público (`/criar-conta`); o frontend não consome `POST /api/users`.
 
 Consulte [frontend-web-nextjs.md](./frontend-web-nextjs.md) para autenticação, papéis, recursos integrados, uploads multipart e configuração do ambiente.
+
+## Tipos de pessoa
+
+O cadastro e a edição de pessoas permitem selecionar vários tipos em `personTypes`: administrador, instrutor, aprendiz, gestor de empresa e responsável. A listagem possui filtro por tipo e o detalhe exibe todas as classificações da pessoa.
+
+Os seletores de instrutor, responsável e funções organizacionais correspondentes aos tipos mostram pessoas compatíveis. Instrutores também precisam de conta ativa com role `INSTRUCTOR`; responsáveis precisam ter ao menos 18 anos. O onboarding de aprendiz inclui o tipo `LEARNER`. Na administração de usuários, as novas roles disponíveis correspondem aos tipos da pessoa vinculada; classificar uma pessoa não concede acesso automaticamente.
