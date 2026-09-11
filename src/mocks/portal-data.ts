@@ -479,7 +479,7 @@ export const contracts = [
     company: "Porto Sul Logística",
     school: "—",
     period: "09 mar 2026 — 08 mar 2027",
-    workload: "24h semanais",
+    workload: "30h semanais",
     salary: "R$ 1.283,38",
     documents: "5 de 6",
     state: "Ativo",

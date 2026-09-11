@@ -73,9 +73,13 @@ function RestrictionNotice({ children }: { children: ReactNode }) {
 function ParticipantCreator({
   lessonId,
   learnerOptions,
+  deliveryMode,
+  allowManualLearnerId,
 }: {
   lessonId: string;
   learnerOptions: LearnerOption[];
+  deliveryMode: DeliveryMode;
+  allowManualLearnerId: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -85,12 +89,17 @@ function ParticipantCreator({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const learnerId = String(form.get("learnerId") ?? "");
+    if (!allowManualLearnerId && !learnerOptions.some((option) => option.id === learnerId)) {
+      setError("Selecione um aprendiz elegível para esta aula.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
       await postJson<LessonParticipant>("/api/backend/lesson-participants", {
         lessonId,
-        learnerId: String(form.get("learnerId") ?? ""),
+        learnerId,
         sourceEnrollmentId: null,
         participationType: String(
           form.get("participationType") ?? "EXTRA",
@@ -117,7 +126,9 @@ function ParticipantCreator({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="portal-button portal-button-secondary h-9"
+        disabled={!allowManualLearnerId && !learnerOptions.length}
+        title={!allowManualLearnerId && !learnerOptions.length ? "Nenhum aprendiz elegível disponível para esta aula." : undefined}
+        className="portal-button portal-button-secondary h-9 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Icon name="plus" className="size-4" />
         Incluir participante
@@ -154,6 +165,7 @@ function ParticipantCreator({
                 {error}
               </p>
             ) : null}
+            {deliveryMode === "ONLINE" ? <p className="mt-4 border-l-[3px] border-amber-500 bg-amber-50 p-3 text-sm leading-6 text-amber-950">Aulas online aceitam somente aprendizes com contrato ativo de 30h na data da aula, inclusive para reposições e participações extras.</p> : null}
             <div className="mt-5 grid gap-4">
               <label>
                 <span className="portal-label">Aprendiz</span>
@@ -173,14 +185,14 @@ function ParticipantCreator({
                       </option>
                     ))}
                   </select>
-                ) : (
+                ) : allowManualLearnerId ? (
                   <input
                     name="learnerId"
                     className="portal-field mt-2 h-10 w-full px-3"
                     placeholder="ID do aprendiz"
                     required
                   />
-                )}
+                ) : <p className="mt-2 text-sm text-[var(--inat-muted)]">Nenhum aprendiz elegível disponível.</p>}
               </label>
               <label>
                 <span className="portal-label">Tipo</span>
@@ -217,7 +229,7 @@ function ParticipantCreator({
               </button>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || (!allowManualLearnerId && !learnerOptions.length)}
                 className="portal-button portal-button-primary disabled:opacity-50"
               >
                 {saving ? "Incluindo..." : "Incluir"}
@@ -832,6 +844,7 @@ export function LessonWorkspace({
   participants,
   attendance,
   learnerOptions,
+  allowManualLearnerId,
   canManage,
 }: {
   lesson: Lesson;
@@ -839,6 +852,7 @@ export function LessonWorkspace({
   participants: LessonParticipant[];
   attendance: AttendanceRecord[];
   learnerOptions: LearnerOption[];
+  allowManualLearnerId: boolean;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -1014,6 +1028,8 @@ export function LessonWorkspace({
                   <ParticipantCreator
                     lessonId={lesson.id}
                     learnerOptions={learnerOptions}
+                    deliveryMode={lesson.deliveryMode}
+                    allowManualLearnerId={allowManualLearnerId}
                   />
                 </div>
               ) : (
@@ -1023,6 +1039,7 @@ export function LessonWorkspace({
               )
             }
           />
+          {lesson.deliveryMode === "ONLINE" ? <p className="border-b border-[var(--inat-line)] px-5 py-3 text-sm text-[var(--inat-muted)]">Somente contratos ativos de 30h entram na lista online. Aprendizes de 20h permanecem matriculados na turma, mas não participam desta aula.</p> : null}
           {!participantsMutable ? (
             <div className="m-4">
               <RestrictionNotice>
