@@ -1,3 +1,5 @@
+import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { accessibleLessonsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { LessonCreator } from "@/components/portal/ResourceCreators";
@@ -8,11 +10,12 @@ import { serverApiAll } from "@/lib/api/server";
 import type { Cohort, Person } from "@/lib/api/domain-contracts";
 import type { UserResponse } from "@/lib/api/contracts";
 import { requireCapability } from "@/lib/auth/session";
-import { accessibleLessons } from "@/lib/portal/data";
 
-export default async function LessonsPage() {
+export default async function LessonsPage({ searchParams }: ListPageProps) {
+  const query = await searchParams ?? {};
   const actor = await requireCapability("lessons:read");
-  const lessons = await accessibleLessons(actor);
+  const page = await accessibleLessonsPage(actor, query);
+  const lessons = page.content;
   const [cohorts, people, users] = hasRole(actor, "ADMIN")
     ? await Promise.all([
         serverApiAll<Cohort>("/api/cohorts"),
@@ -43,7 +46,7 @@ export default async function LessonsPage() {
         description="Aulas organizadas por data, turma e próxima ação operacional."
         action={can(actor, "lessons:manage") ? <LessonCreator cohorts={cohorts} people={people} users={users} /> : undefined}
       />
-      <DataList
+      <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}
         itemLabel="aula"
         searchPlaceholder="Buscar por aula, turma ou instrutor"

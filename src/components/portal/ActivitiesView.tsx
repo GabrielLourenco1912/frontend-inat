@@ -1,5 +1,8 @@
 "use client";
 
+import { ListPagination } from "@/components/design-system/ListPagination";
+import type { Pagination } from "@/lib/pagination";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
@@ -108,12 +111,14 @@ function ActivityCreator({ lessons }: { lessons: Lesson[] }) {
 
 export function ActivitiesView({
   activities,
+  pagination,
   lessons,
   submissions,
   learner,
   canManage,
 }: {
   activities: Activity[];
+  pagination?: Pagination;
   lessons: Lesson[];
   submissions: ActivitySubmission[];
   learner: boolean;
@@ -164,7 +169,8 @@ export function ActivitiesView({
       />
       <div className="border border-[var(--inat-line)] bg-white">
         <div className="overflow-x-auto border-b border-[var(--inat-line)]"><div className="flex min-w-max" role="tablist" aria-label="Filtrar atividades">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`relative min-h-11 px-4 text-sm font-semibold ${filter === item ? "text-[var(--inat-teal-dark)]" : "text-[var(--inat-muted)]"}`} aria-selected={filter === item} role="tab">{item}{filter === item ? <span className="absolute inset-x-3 bottom-0 h-0.5 bg-[var(--inat-clay)]" /> : null}</button>)}</div></div>
-        <div className="border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:p-4"><div className="relative max-w-md"><Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar atividade ou aula" className="portal-field h-10 w-full bg-white pl-9 pr-3 text-sm" /></div></div>
+        <div className="border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:p-4"><div className="relative max-w-md"><Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar atividade ou aula nesta página" className="portal-field h-10 w-full bg-white pl-9 pr-3 text-sm" /></div></div>
+        {pagination ? <p className="px-4 py-2 text-xs text-[var(--inat-muted)]">Busca e filtros se aplicam aos registros desta página.</p> : null}
         <div className="divide-y divide-[var(--inat-line)]">
           {visible.length ? visible.map((activity) => {
             const submission = submissionByActivity.get(activity.id);
@@ -173,6 +179,7 @@ export function ActivitiesView({
           }) : <div className="grid min-h-56 place-items-center p-8 text-center"><div><Icon name="clipboard" className="mx-auto size-7 text-[var(--inat-teal)]" /><h2 className="mt-4 font-semibold">{activities.length ? "Nenhuma atividade neste filtro" : "Nenhuma atividade disponível"}</h2><p className="mt-2 text-sm text-[var(--inat-muted)]">{activities.length ? "Escolha outro estado ou limpe a busca." : "O backend ainda não retornou atividades para suas aulas."}</p></div></div>}
         </div>
       </div>
+      {pagination ? <ListPagination shown={visible.length} {...pagination} /> : null}
     </>
   );
 }

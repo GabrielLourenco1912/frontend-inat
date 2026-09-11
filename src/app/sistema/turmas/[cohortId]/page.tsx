@@ -1,3 +1,4 @@
+import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CohortEnrollmentManager } from "@/components/portal/CohortEnrollmentManager";
@@ -94,7 +95,7 @@ export default async function CohortDetailPage({
         </Sheet>
         <Sheet>
           <SectionHeading title="Aulas" icon="calendar" action={<Link href="/sistema/agenda" className="text-xs font-semibold text-[var(--inat-teal-dark)]">Abrir agenda</Link>} />
-          {lessons.length ? <div className="divide-y divide-[var(--inat-line)]">{lessons.slice(0, 6).map((lesson) => <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="grid gap-2 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"><div><p className="text-sm font-semibold">{lesson.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)} · {apiLabel(lesson.deliveryMode)}</p></div><StatusMark>{apiLabel(lesson.status)}</StatusMark></Link>)}</div> : <EmptyState title="Nenhuma aula planejada" description="Esta turma ainda não possui aulas no backend." icon="calendar" />}
+          {lessons.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{lessons.map((lesson) => <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="grid gap-2 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"><div><p className="text-sm font-semibold">{lesson.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)} · {apiLabel(lesson.deliveryMode)}</p></div><StatusMark>{apiLabel(lesson.status)}</StatusMark></Link>)}</PaginatedContent></div> : <EmptyState title="Nenhuma aula planejada" description="Esta turma ainda não possui aulas no backend." icon="calendar" />}
         </Sheet>
       </div>
       <div className="mt-5"><CohortLifecycleManager cohort={cohort} today={today} hasOpenLessons={lessons.some((lesson) => lesson.status === "SCHEDULED" || lesson.status === "IN_PROGRESS")} reservedCount={enrollments.filter((enrollment) => enrollment.status === "PENDING" || enrollment.status === "ACTIVE").length} /></div>

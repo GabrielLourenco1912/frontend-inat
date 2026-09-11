@@ -1,3 +1,5 @@
+import { serverListPage } from "@/lib/api/pagination";
+import { paginationProps, type ListPageProps } from "@/lib/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { NotificationComposer } from "@/components/portal/NotificationComposer";
@@ -12,15 +14,17 @@ import type {
 import { apiLabel, formatDateTime } from "@/lib/api/format";
 import { serverApiAll } from "@/lib/api/server";
 
-export default async function CommunicationsPage() {
+export default async function CommunicationsPage({ searchParams }: ListPageProps) {
+  const query = await searchParams ?? {};
   await requireCapability("communications:manage");
-  const [notifications, recipients, users, cohorts] = await Promise.all([
-    serverApiAll<Notification>("/api/notifications"),
+  const [page, recipients, users, cohorts] = await Promise.all([
+    serverListPage<Notification>("/api/notifications", query),
     serverApiAll<NotificationRecipient>("/api/notification-recipients"),
     serverApiAll<UserResponse>("/api/users"),
     serverApiAll<Cohort>("/api/cohorts"),
   ]);
   const userMap = new Map(users.map((user) => [user.id, user.displayName]));
+  const notifications = page.content;
   const cohortMap = new Map(cohorts.map((cohort) => [cohort.id, cohort.code]));
   const records = notifications.map((notification) => {
     const deliveries = recipients.filter(
@@ -72,7 +76,7 @@ export default async function CommunicationsPage() {
           />
         }
       />
-      <DataList
+      <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}
         itemLabel="comunicação"
         searchPlaceholder="Buscar título ou público"

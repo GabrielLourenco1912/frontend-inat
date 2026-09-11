@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientPagination } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/design-system/Icon";
@@ -70,6 +71,9 @@ export function DataList({
     });
   }, [query, records, status, statusKey]);
 
+  const localPage = useClientPagination(filtered, `${query}:${status}`);
+  const visible = pagination ? filtered : localPage.items;
+
   const primary = columns.find((column) => column.primary) ?? columns[0];
   const secondary = columns.filter(
     (column) => column.key !== primary.key && column.key !== statusKey,
@@ -124,7 +128,7 @@ export function DataList({
 
       {searchable && localSearchNote ? (
         <div className="border-b border-[var(--inat-line)] bg-white px-4 py-2 text-[0.6875rem] leading-4 text-[var(--inat-muted)]">
-          A busca filtra somente os registros carregados nesta página.
+          {pagination ? "A busca filtra somente os registros carregados nesta página." : "A busca filtra todos os registros disponíveis nesta lista."}
         </div>
       ) : null}
 
@@ -149,7 +153,7 @@ export function DataList({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((record) => (
+                {visible.map((record) => (
                   <tr
                     key={record.id}
                     className="border-b border-[var(--inat-line)] last:border-b-0 hover:bg-[var(--inat-mist)]/35"
@@ -200,7 +204,7 @@ export function DataList({
           </div>
 
           <div className="divide-y divide-[var(--inat-line)] md:hidden">
-            {filtered.map((record) => (
+            {visible.map((record) => (
               <article key={record.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -260,7 +264,7 @@ export function DataList({
         />
       )}
 
-      <ListPagination shown={filtered.length} total={records.length} {...pagination} />
+      {pagination ? <ListPagination shown={filtered.length} {...pagination} /> : localPage.controls}
     </div>
   );
 }

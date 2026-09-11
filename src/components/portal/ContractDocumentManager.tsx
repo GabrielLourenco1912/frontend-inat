@@ -1,5 +1,8 @@
 "use client";
 
+import { apiCatalog } from "@/lib/api/catalog";
+import type { Pagination } from "@/lib/pagination";
+import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Icon } from "@/components/design-system/Icon";
@@ -15,8 +18,9 @@ import {
   uploadValidationError,
 } from "@/lib/files/upload-policy";
 
-export function ContractDocumentManager({ contractId, contractStatus, documents: receivedDocuments, documentTypes, initialDocumentId }: { contractId: string; contractStatus: ContractStatus; documents: ContractDocument[]; documentTypes: DocumentType[]; initialDocumentId?: string }) {
+export function ContractDocumentManager({ contractId, contractStatus, documents: receivedDocuments, documentTypes, initialDocumentId, pagination, focusedDocument }: { contractId: string; contractStatus: ContractStatus; documents: ContractDocument[]; documentTypes: DocumentType[]; initialDocumentId?: string; pagination?: Pagination; focusedDocument?: ContractDocument }) {
   const router = useRouter();
+  const [catalog, setCatalog] = useState<ContractDocument[] | null>(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -26,6 +30,8 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
   const [filter, setFilter] = useState<"ALL" | "CURRENT" | "PREVIOUS">("ALL");
   const [uploadTypeId, setUploadTypeId] = useState("");
   const documents = receivedDocuments.filter((document) => document.contractId === contractId);
+  const allDocuments = catalog ?? documents;
+  const focused = focusedDocument?.contractId === contractId ? focusedDocument : undefined;
   const typeMap = new Map(documentTypes.map((type) => [type.id, type.name]));
   const compatibleTypes = documentTypes.filter(
     (type) => type.scope === "CONTRACT" || type.scope === "BOTH",
@@ -33,11 +39,20 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
   const editable = contractStatus === "DRAFT"
     || contractStatus === "ACTIVE"
     || contractStatus === "SUSPENDED";
-  const hasCurrent = documents.some((document) => document.documentTypeId === Number(uploadTypeId) && document.current);
-  const nextVersion = Math.max(0, ...documents.filter((document) => document.documentTypeId === Number(uploadTypeId)).map((document) => document.versionNumber)) + 1;
+  const hasCurrent = allDocuments.some((document) => document.documentTypeId === Number(uploadTypeId) && document.current);
+  const nextVersion = Math.max(0, ...allDocuments.filter((document) => document.documentTypeId === Number(uploadTypeId)).map((document) => document.versionNumber)) + 1;
   const visible = documents.filter((document) => filter === "ALL" || (filter === "CURRENT" ? document.current : !document.current));
-  const selected = visible.find((document) => document.id === selectedId) ?? visible[0];
-  const anotherCurrent = selected && documents.some((document) => document.documentTypeId === selected.documentTypeId && document.current && document.id !== selected.id);
+  const selected = visible.find((document) => document.id === selectedId) ?? (focused?.id === selectedId ? focused : undefined) ?? catalog?.find((document) => document.id === selectedId) ?? visible[0];
+  const anotherCurrent = selected && allDocuments.some((document) => document.documentTypeId === selected.documentTypeId && document.current && document.id !== selected.id);
+
+  async function loadCatalog() {
+    const items = pagination
+      ? await apiCatalog<ContractDocument>(`/api/backend/contract-documents?contractId=${encodeURIComponent(contractId)}`)
+      : documents;
+    const scoped = items.filter((item) => item.contractId === contractId);
+    setCatalog(scoped);
+    return scoped;
+  }
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,6 +85,8 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
       setSelectedId(saved.id);
       setFilter("ALL");
       setMessage("Versão anexada ao contrato.");
+      setCatalog(null);
+      if (pagination) router.push(`?tab=documentos&page=1&document=${encodeURIComponent(saved.id)}`);
       router.refresh();
     } catch (requestError) {
       setError(requestErrorMessage(requestError, "Não foi possível anexar o documento."));
@@ -84,6 +101,13 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
     setMessage("");
     setSaving(true);
     try {
+      if (!document.current && pagination) {
+        const versions = await loadCatalog();
+        if (versions.some((item) => item.documentTypeId === document.documentTypeId && item.current && item.id !== document.id)) {
+          setError("Este tipo já possui uma versão atual. Abra o histórico completo para desmarcá-la antes de alterar esta versão.");
+          return;
+        }
+      }
       await putJson<ContractDocument>(`/api/backend/contract-documents/${encodeURIComponent(document.id)}`, {
         contractId: document.contractId,
         documentTypeId: document.documentTypeId,
@@ -91,6 +115,7 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
         current: !document.current,
       });
       setMessage("Versão atualizada.");
+      setCatalog(null);
       router.refresh();
     } catch (requestError) {
       setError(requestErrorMessage(requestError, "Não foi possível atualizar a versão."));
@@ -109,6 +134,7 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
       await deleteResource(`/api/backend/contract-documents/${encodeURIComponent(document.id)}`);
       setSelectedId("");
       setMessage("Documento removido do contrato.");
+      setCatalog(null);
       router.refresh();
     } catch (requestError) {
       setError(requestErrorMessage(requestError, "Não foi possível remover o documento."));
@@ -131,7 +157,12 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
 
   return <>
     <Sheet>
-      <SectionHeading stackOnMobile title="Documentos do contrato" description="Somente arquivos vinculados a este contrato. Documentos pessoais ficam no cadastro da pessoa ou do aprendiz." icon="document" action={<button type="button" onClick={() => { setUploadTypeId(""); setError(""); setOpen(true); }} disabled={!editable || !compatibleTypes.length || saving} className="portal-button portal-button-primary h-9 disabled:cursor-not-allowed disabled:opacity-50"><Icon name="upload" className="size-4" />Anexar versão</button>} />
+      <SectionHeading stackOnMobile title="Documentos do contrato" description="Somente arquivos vinculados a este contrato. Documentos pessoais ficam no cadastro da pessoa ou do aprendiz." icon="document" action={<button type="button" onClick={async () => {
+        setUploadTypeId(""); setError(""); setSaving(true);
+        try { await loadCatalog(); setOpen(true); }
+        catch (requestError) { setError(requestErrorMessage(requestError, "Não foi possível consultar as versões existentes.")); }
+        finally { setSaving(false); }
+      }} disabled={!editable || !compatibleTypes.length || saving} className="portal-button portal-button-primary h-9 disabled:cursor-not-allowed disabled:opacity-50"><Icon name="upload" className="size-4" />Anexar versão</button>} />
       {!editable ? <p className="m-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Contratos encerrados ou cancelados preservam os documentos existentes, mas não aceitam novas versões nem mudanças de versão atual.</p> : null}
       {editable && !compatibleTypes.length ? <p className="m-4 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Cadastre um tipo aplicável a contratos antes de anexar uma versão.</p> : null}
       {error && !open ? <p role="alert" className="m-4 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
@@ -139,7 +170,9 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
       <div aria-label="Filtrar versões" className="flex flex-wrap gap-2 border-b border-[var(--inat-line)] p-3">
         {([{ value: "ALL", label: "Todas" }, { value: "CURRENT", label: "Atuais" }, { value: "PREVIOUS", label: "Anteriores" }] as const).map((item) => <button key={item.value} type="button" aria-pressed={filter === item.value} onClick={() => { setFilter(item.value); setSelectedId(""); }} className={`portal-button h-9 ${filter === item.value ? "portal-button-primary" : "portal-button-quiet"}`}>{item.label}</button>)}
       </div>
+      {pagination ? <p className="px-4 py-2 text-xs text-[var(--inat-muted)]">Os filtros se aplicam aos documentos desta página.</p> : null}
       <DocumentWorkspace
+        pagination={pagination}
         items={visible.map((document) => ({ id: document.id, title: typeMap.get(document.documentTypeId) ?? `Tipo ${document.documentTypeId}`, subtitle: document.file.originalName, detail: `Versão ${document.versionNumber} · ${formatDateTime(document.createdAt)}`, status: <StatusMark tone={document.current ? "success" : "neutral"}>{document.current ? "Atual" : "Anterior"}</StatusMark> }))}
         selectedId={selected?.id}
         onSelect={(id) => { setSelectedId(id); setMessage(""); }}
@@ -153,7 +186,8 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
               <DocumentFileCard file={selected.file} onDownload={() => download(selected)} downloading={downloading} />
               <div className="mt-4 border border-[var(--inat-line)]">
                 <h3 className="border-b border-[var(--inat-line)] px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Versões deste tipo</h3>
-                <ol className="divide-y divide-[var(--inat-line)]">{documents.filter((document) => document.documentTypeId === selected.documentTypeId).sort((a, b) => b.versionNumber - a.versionNumber).map((document) => <li key={document.id}><button type="button" onClick={() => { setFilter("ALL"); setSelectedId(document.id); }} className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-[var(--inat-paper)]"><span className="text-xs">Versão {document.versionNumber}<span className="mt-1 block text-[var(--inat-muted)]">{formatDateTime(document.createdAt)}</span></span><StatusMark tone={document.current ? "success" : "neutral"}>{document.current ? "Atual" : "Anterior"}</StatusMark></button></li>)}</ol>
+                {pagination && !catalog ? <button type="button" disabled={saving} className="portal-button portal-button-secondary m-3" onClick={async () => { setSaving(true); try { await loadCatalog(); } catch (error) { setError(requestErrorMessage(error, "Não foi possível carregar o histórico.")); } finally { setSaving(false); } }}>Carregar histórico completo</button> : null}
+                <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{allDocuments.filter((document) => document.documentTypeId === selected.documentTypeId).sort((a, b) => b.versionNumber - a.versionNumber).map((document) => <div key={document.id}><button type="button" onClick={() => { setFilter("ALL"); setSelectedId(document.id); }} className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-[var(--inat-paper)]"><span className="text-xs">Versão {document.versionNumber}<span className="mt-1 block text-[var(--inat-muted)]">{formatDateTime(document.createdAt)}</span></span><StatusMark tone={document.current ? "success" : "neutral"}>{document.current ? "Atual" : "Anterior"}</StatusMark></button></div>)}</PaginatedContent></div>
               </div>
             </div>
             <div>

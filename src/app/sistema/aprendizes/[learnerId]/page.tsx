@@ -1,3 +1,5 @@
+import { personDocumentPage } from "@/lib/documents/pagination";
+import { paginationProps, type ListQuery } from "@/lib/pagination";
 import { notFound } from "next/navigation";
 import { LearnerDossier } from "@/components/portal/LearnerDossier";
 import { can, hasRole } from "@/domain/auth";
@@ -14,7 +16,6 @@ import type {
   Lesson,
   LessonParticipant,
   Person,
-  PersonDocument,
 } from "@/lib/api/domain-contracts";
 import { serverApiAll, serverApiGet, serverApiGetOrNull } from "@/lib/api/server";
 import { requireCapability } from "@/lib/auth/session";
@@ -31,7 +32,7 @@ export default async function LearnerDetailPage({
   searchParams,
 }: {
   params: Promise<{ learnerId: string }>;
-  searchParams: Promise<{ tab?: string | string[]; document?: string | string[] }>;
+  searchParams: Promise<ListQuery>;
 }) {
   const [actor, { learnerId }, query] = await Promise.all([
     requireCapability("learners:read"),
@@ -43,6 +44,7 @@ export default async function LearnerDetailPage({
   );
   if (!learner) notFound();
 
+  const activeTab = firstQueryValue(query.tab) ?? "dados";
   const admin = hasRole(actor, "ADMIN");
   const learnerSelf = hasRole(actor, "LEARNER") && actor.learnerId === learner.id;
   const instructor = hasRole(actor, "INSTRUCTOR");
@@ -54,23 +56,23 @@ export default async function LearnerDetailPage({
             `/api/people/${encodeURIComponent(learner.personId)}`,
           )
         : Promise.resolve(null),
-      instructor
+      instructor || activeTab !== "contrato"
         ? Promise.resolve([] as Contract[])
         : accessibleContracts(actor).then((items) =>
             items.filter((contract) => contract.learnerId === learner.id),
           ),
-      accessibleOrganizations(actor),
-      admin
+      activeTab === "contrato" ? accessibleOrganizations(actor) : Promise.resolve([]),
+      admin && activeTab === "responsaveis"
         ? serverApiGet<LearnerGuardian[]>(
             `/api/learners/${encodeURIComponent(learner.id)}/guardians`,
           )
         : Promise.resolve([]),
-      admin
+      admin && activeTab === "turmas"
         ? serverApiAll<CohortEnrollment>("/api/cohort-enrollments").then(
             (items) => items.filter((item) => item.learnerId === learner.id),
           )
         : Promise.resolve([]),
-      admin ? serverApiAll<Cohort>("/api/cohorts") : Promise.resolve([]),
+      admin && activeTab === "turmas" ? serverApiAll<Cohort>("/api/cohorts") : Promise.resolve([]),
     ]);
 
   let lessons: Lesson[] = [];
@@ -78,14 +80,15 @@ export default async function LearnerDetailPage({
   let activities: Activity[] = [];
   let submissions: ActivitySubmission[] = [];
 
-  if (admin) {
+  const academicTab = activeTab === "frequencia" || activeTab === "atividades";
+  if (admin && academicTab) {
     const [allLessons, participants, allAttendance, allActivities, allSubmissions] =
       await Promise.all([
         accessibleLessons(actor),
         serverApiAll<LessonParticipant>("/api/lesson-participants"),
-        serverApiAll<AttendanceRecord>("/api/attendance-records"),
-        serverApiAll<Activity>("/api/activities"),
-        serverApiAll<ActivitySubmission>("/api/activity-submissions"),
+        activeTab === "frequencia" ? serverApiAll<AttendanceRecord>("/api/attendance-records") : Promise.resolve([]),
+        activeTab === "atividades" ? serverApiAll<Activity>("/api/activities") : Promise.resolve([]),
+        activeTab === "atividades" ? serverApiGet<ActivitySubmission[]>(`/api/activity-submissions/learner/${encodeURIComponent(learner.id)}`) : Promise.resolve([]),
       ]);
     const lessonIds = new Set(
       participants
@@ -96,7 +99,7 @@ export default async function LearnerDetailPage({
     attendance = allAttendance.filter((record) => record.learnerId === learner.id);
     activities = allActivities.filter((activity) => lessonIds.has(activity.lessonId));
     submissions = allSubmissions.filter((submission) => submission.learnerId === learner.id);
-  } else if (learnerSelf) {
+  } else if (learnerSelf && academicTab) {
     lessons = await accessibleLessons(actor);
     [activities, submissions] = await Promise.all([
       accessibleActivities(actor, lessons),
@@ -104,7 +107,7 @@ export default async function LearnerDetailPage({
         `/api/activity-submissions/learner/${encodeURIComponent(learner.id)}`,
       ),
     ]);
-  } else if (instructor) {
+  } else if (instructor && academicTab) {
     const instructorLessons = await accessibleLessons(actor);
     const rosters = await Promise.all(
       instructorLessons.map((lesson) =>
@@ -145,15 +148,12 @@ export default async function LearnerDetailPage({
       .filter((record) => record.learnerId === learner.id);
   }
 
-  const activeTab = firstQueryValue(query.tab) ?? "dados";
-  const [documents, documentTypes] = admin && activeTab === "documentos"
+  const [documentResult, documentTypes] = admin && activeTab === "documentos"
     ? await Promise.all([
-        serverApiAll<PersonDocument>(
-          `/api/person-documents?personId=${encodeURIComponent(learner.personId)}`,
-        ),
+        personDocumentPage(learner.personId, query),
         serverApiAll<DocumentType>("/api/document-types"),
       ])
-    : [[], []];
+    : [null, []];
 
   return (
     <LearnerDossier
@@ -171,7 +171,9 @@ export default async function LearnerDetailPage({
       attendance={attendance}
       activities={activities}
       submissions={submissions}
-      documents={documents}
+      documents={documentResult?.page.content ?? []}
+      focusedDocument={documentResult?.focusedDocument}
+      documentPagination={documentResult ? paginationProps(documentResult.page, { ...query, document: undefined, tab: "documentos" }) : undefined}
       documentTypes={documentTypes}
       canSeeDocuments={can(actor, "documents:read")}
       canSeeSensitiveContract={!instructor}

@@ -1,16 +1,20 @@
+import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { accessibleActivitiesPage } from "@/lib/portal/pagination";
 import { ActivitiesView } from "@/components/portal/ActivitiesView";
 import { can } from "@/domain/auth";
 import { hasRole } from "@/domain/auth";
 import type { ActivitySubmission } from "@/lib/api/domain-contracts";
 import { serverApiAll, serverApiGet } from "@/lib/api/server";
 import { requireCapability } from "@/lib/auth/session";
-import { accessibleActivities, accessibleLessons } from "@/lib/portal/data";
+import { accessibleLessons } from "@/lib/portal/data";
 
-export default async function ActivitiesPage() {
+export default async function ActivitiesPage({ searchParams }: ListPageProps) {
+  const query = await searchParams ?? {};
   const actor = await requireCapability("activities:read");
   const canManage = can(actor, "activities:manage");
   const lessons = await accessibleLessons(actor);
-  const activities = await accessibleActivities(actor, lessons);
+  const page = await accessibleActivitiesPage(actor, query, lessons);
+  const activities = page.content;
   let submissions: ActivitySubmission[] = [];
   if (hasRole(actor, "LEARNER") && actor.learnerId) {
     submissions = await serverApiGet<ActivitySubmission[]>(
@@ -31,7 +35,7 @@ export default async function ActivitiesPage() {
   }
 
   return (
-    <ActivitiesView
+    <ActivitiesView key={page.page} pagination={paginationProps(page, query)}
       activities={activities}
       lessons={lessons}
       submissions={submissions}

@@ -2,11 +2,14 @@ import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { requireCapability } from "@/lib/auth/session";
 import type { RoleRecord } from "@/lib/api/domain-contracts";
-import { serverApiAll } from "@/lib/api/server";
+import { serverListPage } from "@/lib/api/pagination";
+import { paginationProps, type ListPageProps } from "@/lib/pagination";
 
-export default async function RolesPage() {
+export default async function RolesPage({ searchParams }: ListPageProps) {
   await requireCapability("administration:manage");
-  const roles = await serverApiAll<RoleRecord>("/api/roles");
+  const query = await searchParams ?? {};
+  const page = await serverListPage<RoleRecord>("/api/roles", query);
+  const roles = page.content;
   const records = roles.map((role) => ({
     id: String(role.id),
     name: role.name,
@@ -21,7 +24,7 @@ export default async function RolesPage() {
         title="Papéis e acessos"
         description="Catálogo dos quatro papéis de sistema aceitos pelo backend."
       />
-      <DataList
+      <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}
         itemLabel="papel"
         searchPlaceholder="Buscar código ou nome"
