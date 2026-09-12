@@ -29,7 +29,7 @@ export function PeopleList({ people, pagination, initialPersonType = "" }: { peo
       <span className="portal-label">Filtrar por tipo de pessoa</span>
       <select value={personType} onChange={(event) => {
         const value = event.target.value;
-        if (pagination) router.push(`?personType=${encodeURIComponent(value)}&page=1`);
+        if (pagination) router.push(`?personType=${encodeURIComponent(value)}&q=${encodeURIComponent(pagination.search ?? "")}&page=1`);
         else setPersonType(value);
       }} className="portal-field mt-2 h-10 w-full px-3">
         <option value="">Todos os tipos</option>

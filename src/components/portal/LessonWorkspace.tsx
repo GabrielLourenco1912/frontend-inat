@@ -1,5 +1,7 @@
 "use client";
 
+import { SearchSelect } from "@/components/design-system/SearchSelect";
+
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -34,7 +36,6 @@ import type {
 import { apiLabel, formatDateTime, formatTime } from "@/lib/api/format";
 
 type Tab = "resumo" | "participantes" | "chamada" | "atividades" | "historico";
-type LearnerOption = { id: string; label: string };
 type AttendanceDraft = {
   participant: LessonParticipant;
   recordId?: string;
@@ -73,17 +74,16 @@ function RestrictionNotice({ children }: { children: ReactNode }) {
 
 function ParticipantCreator({
   lessonId,
-  learnerOptions,
   deliveryMode,
   allowManualLearnerId,
 }: {
   lessonId: string;
-  learnerOptions: LearnerOption[];
   deliveryMode: DeliveryMode;
   allowManualLearnerId: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [manual, setManual] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -91,7 +91,7 @@ function ParticipantCreator({
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const learnerId = String(form.get("learnerId") ?? "");
-    if (!allowManualLearnerId && !learnerOptions.some((option) => option.id === learnerId)) {
+    if (!learnerId) {
       setError("Selecione um aprendiz elegível para esta aula.");
       return;
     }
@@ -127,8 +127,6 @@ function ParticipantCreator({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        disabled={!allowManualLearnerId && !learnerOptions.length}
-        title={!allowManualLearnerId && !learnerOptions.length ? "Nenhum aprendiz elegível disponível para esta aula." : undefined}
         className="portal-button portal-button-secondary h-9 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Icon name="plus" className="size-4" />
@@ -170,31 +168,9 @@ function ParticipantCreator({
             <div className="mt-5 grid gap-4">
               <label>
                 <span className="portal-label">Aprendiz</span>
-                {learnerOptions.length ? (
-                  <select
-                    name="learnerId"
-                    defaultValue=""
-                    className="portal-field mt-2 h-10 w-full px-3"
-                    required
-                  >
-                    <option value="" disabled>
-                      Selecione
-                    </option>
-                    {learnerOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : allowManualLearnerId ? (
-                  <input
-                    name="learnerId"
-                    className="portal-field mt-2 h-10 w-full px-3"
-                    placeholder="ID do aprendiz"
-                    required
-                  />
-                ) : <p className="mt-2 text-sm text-[var(--inat-muted)]">Nenhum aprendiz elegível disponível.</p>}
+                {manual && allowManualLearnerId ? <input name="learnerId" required className="portal-field mt-2 h-10 w-full px-3" placeholder="Identificador do aprendiz" /> : <SearchSelect name="learnerId" label="Aprendiz" endpoint={`/api/backend/lookups/learners?purpose=participant&contextId=${encodeURIComponent(lessonId)}`} required />}
               </label>
+              {allowManualLearnerId ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={manual} onChange={(event) => setManual(event.target.checked)} /> Informar identificador de aprendiz fora da minha lista</label> : null}
               <label>
                 <span className="portal-label">Tipo</span>
                 <select
@@ -230,7 +206,7 @@ function ParticipantCreator({
               </button>
               <button
                 type="submit"
-                disabled={saving || (!allowManualLearnerId && !learnerOptions.length)}
+                disabled={saving}
                 className="portal-button portal-button-primary disabled:opacity-50"
               >
                 {saving ? "Incluindo..." : "Incluir"}
@@ -846,17 +822,15 @@ export function LessonWorkspace({
   activities,
   participants,
   attendance,
-  learnerOptions,
-  allowManualLearnerId,
   canManage,
+  allowManualLearnerId = false,
 }: {
   lesson: Lesson;
   activities: Activity[];
   participants: LessonParticipant[];
   attendance: AttendanceRecord[];
-  learnerOptions: LearnerOption[];
-  allowManualLearnerId: boolean;
   canManage: boolean;
+  allowManualLearnerId?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("resumo");
@@ -1030,7 +1004,6 @@ export function LessonWorkspace({
                   </button>
                   <ParticipantCreator
                     lessonId={lesson.id}
-                    learnerOptions={learnerOptions}
                     deliveryMode={lesson.deliveryMode}
                     allowManualLearnerId={allowManualLearnerId}
                   />

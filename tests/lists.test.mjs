@@ -19,6 +19,7 @@ function load(relativePath) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
   const localRequire = (id) => {
+    if (id === "next/navigation") return { useRouter: () => ({ push() {} }) };
     if (id === "next/link") return function TestLink({ children, ...props }) {
       delete props.prefetch;
       return createElement("a", props, children);

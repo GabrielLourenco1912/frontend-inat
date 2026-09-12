@@ -1,3 +1,4 @@
+import { relatedRecords } from "@/lib/api/related";
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -40,16 +41,17 @@ export default async function CohortDetailPage({
   );
   if (!cohort) notFound();
 
-  const [allEnrollments, contracts, learners, people, organizations, allLessons] =
-    await Promise.all([
-      serverApiAll<CohortEnrollment>("/api/cohort-enrollments"),
-      serverApiAll<Contract>("/api/contracts"),
-      serverApiAll<Learner>("/api/learners"),
-      serverApiAll<Person>("/api/people"),
-      serverApiAll<Organization>("/api/organizations"),
-      serverApiAll<Lesson>("/api/lessons"),
-    ]);
+  const [allEnrollments, allLessons] = await Promise.all([
+    serverApiAll<CohortEnrollment>("/api/cohort-enrollments"),
+    serverApiAll<Lesson>("/api/lessons"),
+  ]);
   const enrollments = allEnrollments.filter((item) => item.cohortId === cohort.id);
+  const contracts = await relatedRecords<Contract>("contracts", enrollments.map((item) => item.contractId));
+  const [learners, organizations] = await Promise.all([
+    relatedRecords<Learner>("learners", contracts.map((item) => item.learnerId)),
+    relatedRecords<Organization>("organizations", contracts.map((item) => item.employerId)),
+  ]);
+  const people = await relatedRecords<Person>("people", learners.map((item) => item.personId));
   const lessons = allLessons
     .filter((lesson) => lesson.cohortId === cohort.id)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));

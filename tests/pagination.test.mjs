@@ -179,3 +179,62 @@ test("deep-linked documents outside the page are loaded individually and checked
     assert.equal(foreign.focusedDocument, undefined);
   });
 });
+
+for (const [resource, collection, field] of [
+  ["people", "people", "fullName"], ["learners", "learners", "registrationNumber"],
+  ["organizations", "organizations", "legalName"], ["contracts", "contracts", null],
+  ["cohorts", "cohorts", "name"], ["lessons", "lessons", "title"],
+  ["activities", "activities", "title"], ["notifications", "notifications", "title"],
+  ["users", "users", "displayName"], ["roles", "roles", "name"],
+  ["document-types", "documentTypes", "name"],
+]) {
+  test(`${resource}: search finds later records before paginating and retains the query`, async () => {
+    await withRecords(mock[collection], 65, async (records) => {
+      const previousLearner = { ...mock.learners[0] };
+      try {
+        if (!field) mock.learners[0].registrationNumber = "Resultado remoto";
+        records.forEach((record, index) => {
+          if (field) record[field] = index < 40 ? "Outro registro" : "Resultado remoto";
+          else record.learnerId = index < 40 ? "unknown" : mock.learners[0].id;
+        });
+        const query = { q: "Resultado remoto", page: "2" };
+        const page = await serverListPage(`/api/${resource}`, query);
+        assert.equal(page.totalElements, 25);
+        assert.equal(page.content.length, 5);
+        assert.equal(page.page, 1);
+        assert.equal(page.totalPages, 2);
+        assert.equal(requests.length, 1);
+        const url = new URL(requests[0].path, "https://local.test");
+        assert.equal(url.pathname, `/api/search/${resource}`);
+        assert.equal(url.searchParams.get("q"), query.q);
+        assert.equal(url.searchParams.get("size"), "20");
+        const links = paginationProps(page, query);
+        assert.equal(links.search, query.q);
+        assert.equal(new URL(links.previousHref, "https://local.test").searchParams.get("q"), query.q);
+      } finally { Object.assign(mock.learners[0], previousLearner); }
+    });
+  });
+}
+
+test("lookups filter eligibility and text before returning groups of five", async () => {
+  await withRecords(mock.people, 52, async (people) => {
+    people.forEach((person, index) => Object.assign(person, {
+      fullName: index < 30 ? "Outra pessoa" : "Pessoa buscada",
+      personTypes: ["GUARDIAN"], birthDate: index < 40 ? "2020-01-01" : "1990-01-01",
+    }));
+    const pages = [0, 1, 2].map((page) => mock.mockApiGet(`/api/lookups/people?purpose=guardian&q=Pessoa%20buscada&page=${page}&size=5`).data);
+    assert.deepEqual(pages.map((page) => page.content.length), [5, 5, 2]);
+    assert.ok(pages.every((page) => page.totalElements === 12));
+    assert.equal(new Set(pages.flatMap((page) => page.content.map((item) => item.id))).size, 12);
+    assert.deepEqual(Object.keys(pages[0].content[0]).sort(), ["id", "label"]);
+    assert.equal(mock.mockApiGet("/api/lookups/people?purpose=guardian&size=20").status, 400);
+    assert.equal(mock.mockApiGet("/api/lookups/people?purpose=employer").status, 400);
+    assert.equal(mock.mockApiGet("/api/lookups/people?purpose=guardian&q=inexistente").data.totalElements, 0);
+  });
+});
+
+test("non-admin textual search uses the scoped search endpoint", async () => {
+  actor = { ...actor, roles: ["INSTRUCTOR"] };
+  await load("lib/portal/pagination").accessibleLessonsPage(actor, { q: "aula" });
+  assert.deepEqual(requests, [{ name: "serverApiPage", path: "/api/search/lessons?q=aula&page=0&size=20" }]);
+});

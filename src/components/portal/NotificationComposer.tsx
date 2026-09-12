@@ -1,5 +1,7 @@
 "use client";
 
+import { SearchSelect } from "@/components/design-system/SearchSelect";
+
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Icon } from "@/components/design-system/Icon";
@@ -11,15 +13,7 @@ import type {
   NotificationPriority,
 } from "@/lib/api/domain-contracts";
 
-type Option = { id: string; label: string };
-
-export function NotificationComposer({
-  users,
-  cohorts,
-}: {
-  users: Option[];
-  cohorts: Option[];
-}) {
+export function NotificationComposer() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [audience, setAudience] = useState<NotificationAudienceType>("USER");
@@ -93,7 +87,6 @@ export function NotificationComposer({
     }
   }
 
-  const targets = audience === "USER" ? users : cohorts;
 
   return (
     <>
@@ -122,7 +115,7 @@ export function NotificationComposer({
               <label className="text-sm"><span className="portal-label">Mensagem</span><textarea name="message" rows={5} className="portal-field mt-2 w-full px-3 py-2" required /></label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="text-sm"><span className="portal-label">Público</span><select value={audience} onChange={(event) => setAudience(event.target.value as NotificationAudienceType)} className="portal-field mt-2 h-10 w-full px-3"><option value="USER">Um usuário</option><option value="COHORT">Uma turma</option><option value="ALL">Todos os usuários ativos</option></select></label>
-                {audience !== "ALL" ? <label className="text-sm"><span className="portal-label">Destinatário</span><select name="targetId" className="portal-field mt-2 h-10 w-full px-3" required defaultValue=""><option value="" disabled>Selecione</option>{targets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}</select></label> : null}
+                {audience !== "ALL" ? <label className="text-sm"><span className="portal-label">Destinatário</span><SearchSelect name="targetId" label="Destinatário" key={audience} endpoint={audience === "USER" ? "/api/backend/lookups/users?purpose=audience-user" : "/api/backend/lookups/cohorts?purpose=audience-cohort"} required /></label> : null}
               </div>
               <fieldset><legend className="portal-label">Canais</legend><div className="mt-2 flex flex-wrap gap-4">{(["IN_APP", "EMAIL"] as const).map((channel) => <label key={channel} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={channels.includes(channel)} onChange={() => toggleChannel(channel)} className="size-4 accent-[var(--inat-teal)]" />{channel === "IN_APP" ? "No portal" : "E-mail"}</label>)}</div></fieldset>
               <label className="text-sm"><span className="portal-label">Ação no portal (opcional)</span><input name="actionUrl" placeholder="/sistema/atividades/..." maxLength={512} className="portal-field mt-2 h-10 w-full px-3" /></label>

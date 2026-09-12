@@ -1,3 +1,4 @@
+import { relatedRecords } from "@/lib/api/related";
 import { serverListPage } from "@/lib/api/pagination";
 import { paginationProps, type ListPageProps } from "@/lib/pagination";
 import { DataList } from "@/components/design-system/DataList";
@@ -17,11 +18,13 @@ import { serverApiAll } from "@/lib/api/server";
 export default async function CommunicationsPage({ searchParams }: ListPageProps) {
   const query = await searchParams ?? {};
   await requireCapability("communications:manage");
-  const [page, recipients, users, cohorts] = await Promise.all([
+  const [page, recipients] = await Promise.all([
     serverListPage<Notification>("/api/notifications", query),
     serverApiAll<NotificationRecipient>("/api/notification-recipients"),
-    serverApiAll<UserResponse>("/api/users"),
-    serverApiAll<Cohort>("/api/cohorts"),
+  ]);
+  const [users, cohorts] = await Promise.all([
+    relatedRecords<UserResponse>("users", [...recipients.map((recipient) => recipient.recipientUserId), ...page.content.filter((item) => item.audience.type === "USER").map((item) => item.audience.targetId)]),
+    relatedRecords<Cohort>("cohorts", page.content.filter((item) => item.audience.type === "COHORT").map((item) => item.audience.targetId)),
   ]);
   const userMap = new Map(users.map((user) => [user.id, user.displayName]));
   const notifications = page.content;
@@ -68,12 +71,7 @@ export default async function CommunicationsPage({ searchParams }: ListPageProps
         title="Mensagens e entregas"
         description="Notificações internas e por e-mail, com público obrigatório e estado real de entrega."
         action={
-          <NotificationComposer
-            users={users
-              .filter((user) => user.status === "ACTIVE")
-              .map((user) => ({ id: user.id, label: user.displayName }))}
-            cohorts={cohorts.map((cohort) => ({ id: cohort.id, label: `${cohort.code} · ${cohort.name}` }))}
-          />
+          <NotificationComposer />
         }
       />
       <DataList key={page.page} pagination={paginationProps(page, query)}

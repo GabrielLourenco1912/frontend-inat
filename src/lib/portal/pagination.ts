@@ -2,12 +2,12 @@ import "server-only";
 import type { Actor } from "@/domain/auth";
 import { hasRole } from "@/domain/auth";
 import { serverListPage } from "@/lib/api/pagination";
-import { pageIndex, paginateItems, type ListQuery } from "@/lib/pagination";
+import { pageIndex, paginateItems, queryValue, type ListQuery } from "@/lib/pagination";
 import { accessibleActivities, accessibleContracts, accessibleLearners, accessibleLessons, accessibleOrganizations } from "@/lib/portal/data";
 import type { Activity, Contract, Learner, Lesson, Organization } from "@/lib/api/domain-contracts";
 
 async function accessiblePage<T>(actor: Actor, path: string, query: ListQuery, fallback: () => Promise<T[]>) {
-  if (hasRole(actor, "ADMIN")) return serverListPage<T>(path, query);
+  if (hasRole(actor, "ADMIN") || queryValue(query.q)?.trim()) return serverListPage<T>(path, query);
   // Scoped endpoints do not accept page/size. Keep their authorization boundary.
   return paginateItems(await fallback(), pageIndex(query.page));
 }

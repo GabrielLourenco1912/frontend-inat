@@ -12,6 +12,7 @@ export class ApiRequestError extends Error {
 }
 
 type ApiRequestOptions = {
+  signal?: AbortSignal;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown | FormData;
 };
@@ -21,6 +22,7 @@ function requestInit(options: ApiRequestOptions): RequestInit {
   const formData = body instanceof FormData;
   return {
     method: options.method ?? "GET",
+    signal: options.signal,
     headers:
       body === undefined || formData
         ? undefined

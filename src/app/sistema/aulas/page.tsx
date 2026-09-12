@@ -1,3 +1,4 @@
+import { relatedRecords } from "@/lib/api/related";
 import { paginationProps, type ListPageProps } from "@/lib/pagination";
 import { accessibleLessonsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
@@ -6,9 +7,7 @@ import { LessonCreator } from "@/components/portal/ResourceCreators";
 import { can } from "@/domain/auth";
 import { hasRole } from "@/domain/auth";
 import { apiLabel, formatDateTimePeriod } from "@/lib/api/format";
-import { serverApiAll } from "@/lib/api/server";
 import type { Cohort, Person } from "@/lib/api/domain-contracts";
-import type { UserResponse } from "@/lib/api/contracts";
 import { requireCapability } from "@/lib/auth/session";
 
 export default async function LessonsPage({ searchParams }: ListPageProps) {
@@ -16,13 +15,12 @@ export default async function LessonsPage({ searchParams }: ListPageProps) {
   const actor = await requireCapability("lessons:read");
   const page = await accessibleLessonsPage(actor, query);
   const lessons = page.content;
-  const [cohorts, people, users] = hasRole(actor, "ADMIN")
+  const [cohorts, people] = hasRole(actor, "ADMIN")
     ? await Promise.all([
-        serverApiAll<Cohort>("/api/cohorts"),
-        serverApiAll<Person>("/api/people"),
-        serverApiAll<UserResponse>("/api/users"),
+        relatedRecords<Cohort>("cohorts", lessons.map((lesson) => lesson.cohortId)),
+        relatedRecords<Person>("people", lessons.map((lesson) => lesson.instructorPersonId)),
       ])
-    : [[], [], []];
+    : [[], []];
   const cohortNames = new Map(cohorts.map((cohort) => [cohort.id, cohort.code]));
   const personNames = new Map(people.map((person) => [person.id, person.fullName]));
   const records = lessons.map((lesson) => ({
@@ -44,7 +42,7 @@ export default async function LessonsPage({ searchParams }: ListPageProps) {
         eyebrow="Acadêmico"
         title="Aulas e chamada"
         description="Aulas organizadas por data, turma e próxima ação operacional."
-        action={can(actor, "lessons:manage") ? <LessonCreator cohorts={cohorts} people={people} users={users} /> : undefined}
+        action={can(actor, "lessons:manage") ? <LessonCreator /> : undefined}
       />
       <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}

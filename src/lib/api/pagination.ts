@@ -1,10 +1,16 @@
 import "server-only";
 import { serverApiPage } from "@/lib/api/server";
-import { PAGE_SIZE, pageIndex, type ListQuery } from "@/lib/pagination";
+import { PAGE_SIZE, pageIndex, queryValue, type ListQuery } from "@/lib/pagination";
 
 export async function serverListPage<T>(path: string, query: ListQuery = {}, key = "page") {
-  const [pathname, search] = path.split("?");
+  const [originalPath, search] = path.split("?");
+  let pathname = originalPath;
   const params = new URLSearchParams(search);
+  const q = queryValue(query.q)?.trim();
+  if (q && /^\/api\/(people|learners|organizations|contracts|cohorts|lessons|activities|notifications|users|roles|document-types)$/.test(pathname)) {
+    pathname = pathname.replace("/api/", "/api/search/");
+    params.set("q", q);
+  }
   params.set("page", String(pageIndex(query[key])));
   params.set("size", String(PAGE_SIZE));
   const result = await serverApiPage<T>(`${pathname}?${params}`);
