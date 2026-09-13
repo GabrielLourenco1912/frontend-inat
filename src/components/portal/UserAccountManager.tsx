@@ -1,5 +1,6 @@
 "use client";
 
+import { ServerSearch } from "@/components/design-system/ServerSearch";
 import { ListPagination } from "@/components/design-system/ListPagination";
 import type { Pagination } from "@/lib/pagination";
 
@@ -271,7 +272,7 @@ export function UserAccountManager({
         <div className="border border-[var(--inat-line)] bg-white lg:grid lg:min-h-[36rem] lg:grid-cols-[minmax(17rem,0.75fr)_minmax(28rem,1.25fr)]">
           <aside className="border-b border-[var(--inat-line)] lg:border-b-0 lg:border-r">
             <div className="border-b border-[var(--inat-line)] p-3">
-              <div className="relative">
+              {pagination ? <ServerSearch key={pagination.search} initialQuery={pagination.search} placeholder="Buscar nome, e-mail ou papel" /> :               <div className="relative">
                 <Icon
                   name="search"
                   className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]"
@@ -283,7 +284,7 @@ export function UserAccountManager({
                   placeholder="Buscar conta nesta página"
                   className="portal-field h-10 w-full pl-9 pr-3"
                 />
-              </div>
+              </div>}
             </div>
             <div className="divide-y divide-[var(--inat-line)]">
               {visible.map((user) => {

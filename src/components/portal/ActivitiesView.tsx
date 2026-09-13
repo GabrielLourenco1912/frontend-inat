@@ -1,5 +1,8 @@
 "use client";
 
+import { SearchSelect } from "@/components/design-system/SearchSelect";
+
+import { ServerSearch } from "@/components/design-system/ServerSearch";
 import { ListPagination } from "@/components/design-system/ListPagination";
 import type { Pagination } from "@/lib/pagination";
 
@@ -17,12 +20,8 @@ import type {
 } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime } from "@/lib/api/format";
 
-function ActivityCreator({ lessons }: { lessons: Lesson[] }) {
+function ActivityCreator() {
   const router = useRouter();
-  const eligibleLessons = useMemo(
-    () => lessons.filter((lesson) => lesson.status !== "CANCELLED"),
-    [lessons],
-  );
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +37,7 @@ function ActivityCreator({ lessons }: { lessons: Lesson[] }) {
     const availableDate = new Date(availableAt);
     const dueDate = new Date(dueAt);
 
-    if (!eligibleLessons.some((lesson) => lesson.id === lessonId)) {
+    if (!lessonId) {
       setError("Selecione uma aula não cancelada.");
       return;
     }
@@ -77,17 +76,10 @@ function ActivityCreator({ lessons }: { lessons: Lesson[] }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          disabled={!eligibleLessons.length}
-          title={eligibleLessons.length ? undefined : "Atividades exigem uma aula não cancelada"}
           className="portal-button portal-button-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Icon name="plus" className="size-4" />Nova atividade
         </button>
-        {lessons.length > 0 && !eligibleLessons.length ? (
-          <span className="max-w-56 text-right text-[0.6875rem] text-[var(--inat-muted)]">
-            Aulas canceladas não aceitam novas atividades.
-          </span>
-        ) : null}
       </div>
       {open ? (
         <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[var(--inat-ink)]/70 p-4" role="dialog" aria-modal="true" aria-labelledby="activity-form-title">
@@ -95,7 +87,7 @@ function ActivityCreator({ lessons }: { lessons: Lesson[] }) {
             <div className="flex items-center justify-between border-b border-[var(--inat-line)] p-4 sm:px-5"><div><p className="font-mono text-[0.625rem] font-bold uppercase tracking-[.12em] text-[var(--inat-teal-dark)]">Aprendizagem</p><h2 id="activity-form-title" className="mt-1 text-lg font-semibold">Nova atividade</h2></div><button type="button" onClick={() => setOpen(false)} className="grid size-9 place-items-center text-xl" aria-label="Fechar">×</button></div>
             <div className="grid max-h-[72svh] gap-4 overflow-y-auto p-5">
               {error ? <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
-              <label><span className="portal-label">Aula</span><select name="lessonId" className="portal-field mt-2 h-10 w-full px-3" required defaultValue=""><option value="" disabled>Selecione</option>{eligibleLessons.map((lesson) => <option key={lesson.id} value={lesson.id}>{lesson.title} · {formatDateTime(lesson.startsAt)}</option>)}</select><span className="mt-1.5 block text-xs text-[var(--inat-muted)]">Aulas canceladas não aparecem porque não aceitam atividades.</span></label>
+              <label><span className="portal-label">Aula</span><SearchSelect name="lessonId" label="Aula" endpoint="/api/backend/lookups/lessons?purpose=activity" required /><span className="mt-1.5 block text-xs text-[var(--inat-muted)]">Aulas canceladas não aparecem porque não aceitam atividades.</span></label>
               <label><span className="portal-label">Título</span><input name="title" maxLength={160} className="portal-field mt-2 h-10 w-full px-3" required /></label>
               <label><span className="portal-label">Enunciado</span><textarea name="description" rows={6} className="portal-field mt-2 w-full px-3 py-2" required /></label>
               <div className="grid gap-4 sm:grid-cols-2"><label><span className="portal-label">Disponível em</span><input name="availableAt" type="datetime-local" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Prazo</span><input name="dueAt" type="datetime-local" className="portal-field mt-2 h-10 w-full px-3" required /></label></div>
@@ -165,12 +157,12 @@ export function ActivitiesView({
         eyebrow="Aprendizagem"
         title={learner ? "Minhas atividades" : "Atividades e correções"}
         description={learner ? "Prazos, devolutivas e entregas carregados do backend." : "Publicação, entregas e correções organizadas pelo estado real."}
-        action={canManage ? <ActivityCreator lessons={lessons} /> : undefined}
+        action={canManage ? <ActivityCreator /> : undefined}
       />
       <div className="border border-[var(--inat-line)] bg-white">
         <div className="overflow-x-auto border-b border-[var(--inat-line)]"><div className="flex min-w-max" role="tablist" aria-label="Filtrar atividades">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`relative min-h-11 px-4 text-sm font-semibold ${filter === item ? "text-[var(--inat-teal-dark)]" : "text-[var(--inat-muted)]"}`} aria-selected={filter === item} role="tab">{item}{filter === item ? <span className="absolute inset-x-3 bottom-0 h-0.5 bg-[var(--inat-clay)]" /> : null}</button>)}</div></div>
-        <div className="border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:p-4"><div className="relative max-w-md"><Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar atividade ou aula nesta página" className="portal-field h-10 w-full bg-white pl-9 pr-3 text-sm" /></div></div>
-        {pagination ? <p className="px-4 py-2 text-xs text-[var(--inat-muted)]">Busca e filtros se aplicam aos registros desta página.</p> : null}
+        <div className="border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:p-4">{pagination ? <ServerSearch key={pagination.search} initialQuery={pagination.search} placeholder="Buscar atividade ou aula" /> : <div className="relative max-w-md"><Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar atividade ou aula nesta página" className="portal-field h-10 w-full bg-white pl-9 pr-3 text-sm" /></div>}</div>
+        {pagination ? <p className="px-4 py-2 text-xs text-[var(--inat-muted)]">A busca consulta todas as atividades acessíveis. Os filtros de estado se aplicam à página atual.</p> : null}
         <div className="divide-y divide-[var(--inat-line)]">
           {visible.length ? visible.map((activity) => {
             const submission = submissionByActivity.get(activity.id);

@@ -1,3 +1,4 @@
+import { relatedRecords } from "@/lib/api/related";
 import { paginationProps, type ListPageProps } from "@/lib/pagination";
 import { accessibleLearnersPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
@@ -20,14 +21,14 @@ export default async function LearnersPage({ searchParams }: ListPageProps) {
   const query = await searchParams ?? {};
   const actor = await requireCapability("learners:read");
   const admin = hasRole(actor, "ADMIN");
-  const [page, people, contracts, enrollments, cohorts, organizations] = await Promise.all([
+  const [page, contracts, enrollments, cohorts, organizations] = await Promise.all([
     accessibleLearnersPage(actor, query),
-    admin ? serverApiAll<Person>("/api/people") : Promise.resolve([]),
     admin ? serverApiAll<Contract>("/api/contracts") : Promise.resolve([]),
     admin ? serverApiAll<CohortEnrollment>("/api/cohort-enrollments") : Promise.resolve([]),
     admin ? serverApiAll<Cohort>("/api/cohorts") : Promise.resolve([]),
     admin ? serverApiAll<Organization>("/api/organizations") : Promise.resolve([]),
   ]);
+  const people = admin ? await relatedRecords<Person>("people", page.content.map((learner) => learner.personId)) : [];
   const personMap = new Map(people.map((person) => [person.id, person.fullName]));
   const learners = page.content;
   const contractById = new Map(contracts.map((contract) => [contract.id, contract]));
@@ -70,7 +71,7 @@ export default async function LearnersPage({ searchParams }: ListPageProps) {
         eyebrow="Pessoas e percurso"
         title={hasRole(actor, "LEARNER") ? "Meu percurso" : "Aprendizes"}
         description={hasRole(actor, "EMPLOYER_MANAGER") ? "Aprendizes com contrato ativo ou histórico autorizado na sua organização." : "Matrícula, escolaridade, turma e situação acadêmica em uma visão contextual."}
-        action={can(actor, "learners:manage") ? <LearnerOnboardingCreator guardianPeople={people} /> : undefined}
+        action={can(actor, "learners:manage") ? <LearnerOnboardingCreator /> : undefined}
       />
       <DataList key={page.page} pagination={paginationProps(page, query)}
         records={records}

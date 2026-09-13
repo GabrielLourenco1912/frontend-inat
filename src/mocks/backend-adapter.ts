@@ -1,3 +1,4 @@
+import { hasOnlineEligibleContract, apprenticeshipLessonDate } from "@/lib/apprenticeship/policy";
 import type {
   CurrentUserContextResponse,
   PageResponse,
@@ -31,7 +32,7 @@ import type {
   UserRole,
 } from "@/lib/api/domain-contracts";
 import type { Actor, Role } from "@/domain/auth";
-import { PERSON_TYPE_OPTIONS, hasPersonType } from "@/lib/people/person-types";
+import { PERSON_TYPE_OPTIONS, hasPersonType, isEligibleGuardian, isEligibleInstructor } from "@/lib/people/person-types";
 import {
   MOCK_TODAY,
   activities as portalActivities,
@@ -833,11 +834,72 @@ export type MockApiResult = {
   message?: string;
 };
 
+
+function mockSearch(resource: string, params: URLSearchParams, lookup: boolean): MockApiResult {
+  const values = collections[resource];
+  if (!values || !["people", "learners", "organizations", "contracts", "cohorts", "lessons", "activities", "notifications", "users", "roles", "document-types"].includes(resource)) return { status: 404, data: null };
+  const purpose = params.get("purpose") ?? "";
+  const expected: Record<string, string> = { guardian: "people", instructor: "people", member: "people", "contract-learner": "learners", participant: "learners", employer: "organizations", school: "organizations", parent: "organizations", enrollment: "contracts", "lesson-cohort": "cohorts", "audience-cohort": "cohorts", activity: "lessons", "audience-user": "users" };
+  const size = Number(params.get("size") ?? (lookup ? 5 : 20));
+  const index = Number(params.get("page") ?? 0);
+  const q = (params.get("q") ?? "").trim().toLocaleLowerCase("pt-BR");
+  if (!Number.isInteger(size) || size < 1 || size > (lookup ? 5 : 100) || !Number.isInteger(index) || index < 0 || q.length > 160 || (lookup && expected[purpose] !== resource)) return { status: 400, data: null, message: "Parâmetros de busca inválidos" };
+  const personType = params.get("personType");
+  if (personType && !PERSON_TYPE_OPTIONS.some((type) => type.code === personType)) return { status: 400, data: null };
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  const lesson = lessons.find((item) => item.id === params.get("contextId"));
+  if (purpose === "participant" && !lesson) return { status: 404, data: null, message: "Aula não encontrada" };
+  type Item = Record<string, unknown>;
+  const personFor = (item: Item) => people.find((person) => person.id === item.personId);
+  const learnerFor = (item: Item) => learners.find((learner) => learner.id === item.learnerId);
+  function label(item: Item) {
+    if (resource === "people") return String(item.fullName);
+    if (resource === "learners") return `${item.registrationNumber} · ${personFor(item)?.fullName ?? ""}`;
+    if (resource === "contracts") { const learner = learnerFor(item); return `${people.find((person) => person.id === learner?.personId)?.fullName ?? learner?.registrationNumber ?? ""} · ${item.id}`; }
+    if (resource === "organizations") return String(item.tradeName || item.legalName);
+    if (resource === "cohorts") return `${item.code} · ${item.name}`;
+    if (resource === "users") return `${item.displayName} · ${item.loginEmail}`;
+    return String(item.title ?? item.name ?? item.code ?? item.id);
+  }
+  function searchable(item: Item) {
+    if (resource === "people") return [item.fullName, item.taxId, item.contactEmail, item.phoneNumber, (item.address as Person["address"])?.city, (item.personTypes as string[])?.join(" "), PERSON_TYPE_OPTIONS.filter((type) => (item.personTypes as string[])?.includes(type.code)).map((type) => type.label).join(" ")];
+    if (resource === "learners") return [item.registrationNumber, personFor(item)?.fullName];
+    if (resource === "organizations") return [item.legalName, item.tradeName, item.taxId, item.contactEmail, (item.address as Organization["address"])?.city];
+    if (resource === "contracts") { const learner = learnerFor(item); const employer = organizations.find((org) => org.id === item.employerId); return [item.id, learner?.registrationNumber, people.find((person) => person.id === learner?.personId)?.fullName, employer?.legalName, employer?.tradeName]; }
+    if (resource === "lessons") { const cohort = cohorts.find((cohort) => cohort.id === item.cohortId); return [item.title, cohort?.code, cohort?.name, people.find((person) => person.id === item.instructorPersonId)?.fullName]; }
+    if (resource === "activities") return [item.title, lessons.find((lesson) => lesson.id === item.lessonId)?.title];
+    if (resource === "notifications") { const audience = item.audience as Notification["audience"]; return [item.title, item.message, audience?.type === "ALL" ? "Todos" : users.find((user) => user.id === audience?.targetId)?.displayName, cohorts.find((cohort) => cohort.id === audience?.targetId)?.code, cohorts.find((cohort) => cohort.id === audience?.targetId)?.name]; }
+    if (resource === "users") return [item.displayName, item.loginEmail, (item.roles as string[])?.join(" ")];
+    return [item.code, item.name, item.description];
+  }
+  const filtered = (values as Item[]).filter((item) => {
+    if (personType && !(item.personTypes as string[] | undefined)?.includes(personType)) return false;
+    if (q && !searchable(item).some((value) => String(value ?? "").toLocaleLowerCase("pt-BR").includes(q))) return false;
+    if (!lookup) return true;
+    switch (purpose) {
+      case "guardian": return isEligibleGuardian(item as unknown as Person, today);
+      case "instructor": return isEligibleInstructor(item as unknown as Person, users);
+      case "contract-learner": return item.status === "ACTIVE" && personFor(item)?.status === "ACTIVE";
+      case "participant": return item.status === "ACTIVE" && personFor(item)?.status === "ACTIVE" && !lessonParticipants.some((participant) => participant.lessonId === lesson!.id && participant.learnerId === item.id) && (lesson!.deliveryMode !== "ONLINE" || hasOnlineEligibleContract(String(item.id), contracts, apprenticeshipLessonDate(lesson!.startsAt)));
+      case "employer": return item.status === "ACTIVE" && item.organizationType === "EMPLOYER";
+      case "school": return item.status === "ACTIVE" && item.organizationType === "SCHOOL";
+      case "enrollment": return ["DRAFT", "ACTIVE", "SUSPENDED"].includes(String(item.status));
+      case "lesson-cohort": case "audience-user": return item.status === "ACTIVE";
+      case "activity": return item.status !== "CANCELLED";
+      default: return true;
+    }
+  }).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  params.set("size", String(size));
+  const result = page(filtered, params);
+  return { status: 200, data: { ...result, content: lookup ? result.content.map((item) => ({ id: String(item.id), label: label(item) })) : result.content } };
+}
+
 export function mockApiGet(path: string): MockApiResult {
   const url = new URL(path, "http://mock.inat.local");
   const segments = url.pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
   const [resource, id, relation] = segments;
 
+  if (resource === "search" || resource === "lookups") return mockSearch(id, url.searchParams, resource === "lookups");
   if (resource === "me") return { status: 200, data: mockCurrentUser };
   if (resource === "person-documents" && !id) {
     const personId = url.searchParams.get("personId");

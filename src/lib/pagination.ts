@@ -4,6 +4,7 @@ export const PAGE_SIZE = 20;
 export type ListQuery = Record<string, string | string[] | undefined>;
 export type ListPageProps = { searchParams?: Promise<ListQuery> };
 export type Pagination = {
+  search?: string;
   total: number;
   page: number;
   totalPages: number;
@@ -36,6 +37,7 @@ export function pageHref(query: ListQuery, page: number, key = "page") {
 
 export function paginationProps(page: Omit<PageResponse<unknown>, "content">, query: ListQuery = {}, key = "page"): Pagination {
   return {
+    search: queryValue(query.q)?.trim() ?? "",
     total: page.totalElements,
     page: page.page,
     totalPages: page.totalPages,

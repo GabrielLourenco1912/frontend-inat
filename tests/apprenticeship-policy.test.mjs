@@ -139,35 +139,41 @@ test("a learner cannot use someone else's 30-hour contract", () => {
   assert.equal(policy.hasOnlineEligibleContract("twenty", [contract("thirty")], "2026-09-10"), false);
 });
 
-test("the online participant dropdown contains only eligible, unlisted learners", async () => {
-  const page = await LessonPage({ params: Promise.resolve({ lessonId: "lesson" }) });
-  assert.deepEqual(page.props.learnerOptions.map((option) => option.id), ["thirty"]);
-  assert.equal(page.props.allowManualLearnerId, false);
-  assert.ok(requests.includes("/api/contracts"));
-});
+function participantOptions() {
+  const mock = load("mocks/backend-adapter");
+  const substitutions = { learners: data["/api/learners"], people: data["/api/people"], contracts: data["/api/contracts"], lessons: [data["/api/lessons/lesson"]], lessonParticipants: data["/api/lesson-participants/lesson/lesson"].map((item) => ({ ...item, lessonId: "lesson" })) };
+  const originals = Object.fromEntries(Object.keys(substitutions).map((key) => [key, [...mock[key]]]));
+  try {
+    for (const [key, items] of Object.entries(substitutions)) mock[key].splice(0, mock[key].length, ...items);
+    const response = mock.mockApiGet("/api/lookups/learners?purpose=participant&contextId=lesson&size=5");
+    assert.equal(response.status, 200);
+    return response.data;
+  } finally {
+    for (const [key, items] of Object.entries(originals)) mock[key].splice(0, mock[key].length, ...items);
+  }
+}
 
-test("the onsite dropdown keeps both models without loading contracts", async () => {
+test("online lookup includes only eligible, unlisted learners", () => {
+  assert.deepEqual(participantOptions().content.map((option) => option.id), ["thirty"]);
+});
+test("onsite lookup keeps both workloads", () => {
   data["/api/lessons/lesson"].deliveryMode = "ONSITE";
-  const page = await LessonPage({ params: Promise.resolve({ lessonId: "lesson" }) });
-  const ids = page.props.learnerOptions.map((option) => option.id);
+  const ids = participantOptions().content.map((option) => option.id);
   assert.ok(ids.includes("twenty"));
   assert.ok(ids.includes("thirty"));
-  assert.ok(!requests.includes("/api/contracts"));
 });
-
-test("an empty eligible dropdown does not fall back to arbitrary learner IDs for admins", async () => {
+test("empty online lookup cannot offer learners without eligible contracts", () => {
   data["/api/contracts"] = [];
-  const page = await LessonPage({ params: Promise.resolve({ lessonId: "lesson" }) });
-  assert.deepEqual(page.props.learnerOptions, []);
-  assert.equal(page.props.allowManualLearnerId, false);
+  assert.equal(participantOptions().totalElements, 0);
 });
-
-test("instructors keep server-validated ID entry without gaining access to contract data", async () => {
-  actor.roles = ["INSTRUCTOR"];
-  const page = await LessonPage({ params: Promise.resolve({ lessonId: "lesson" }) });
-  assert.equal(page.props.allowManualLearnerId, true);
-  assert.equal(page.props.canManage, true);
-  assert.ok(!requests.includes("/api/contracts"));
-  assert.ok(!requests.includes("/api/people"));
-  assert.ok(!requests.includes("/api/learners"));
+test("lesson pages do not preload learner, person or contract catalogs", async () => {
+  for (const role of ["ADMIN", "INSTRUCTOR"]) {
+    actor.roles = [role];
+    const page = await LessonPage({ params: Promise.resolve({ lessonId: "lesson" }) });
+    assert.equal(page.props.canManage, true);
+    assert.equal(page.props.allowManualLearnerId, role === "INSTRUCTOR");
+    assert.ok(!requests.includes("/api/contracts"));
+    assert.ok(!requests.includes("/api/people"));
+    assert.ok(!requests.includes("/api/learners"));
+  }
 });

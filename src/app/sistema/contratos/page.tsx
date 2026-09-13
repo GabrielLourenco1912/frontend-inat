@@ -1,3 +1,4 @@
+import { relatedRecords } from "@/lib/api/related";
 import { paginationProps, type ListPageProps } from "@/lib/pagination";
 import { accessibleContractsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
@@ -6,25 +7,23 @@ import { ContractCreator } from "@/components/portal/ResourceCreators";
 import { can } from "@/domain/auth";
 import { hasRole } from "@/domain/auth";
 import { apiLabel, formatMinutes, formatPeriod } from "@/lib/api/format";
-import { serverApiAll } from "@/lib/api/server";
-import type { Person } from "@/lib/api/domain-contracts";
+import type { Person, Learner } from "@/lib/api/domain-contracts";
 import { requireCapability } from "@/lib/auth/session";
 import {
-  accessibleLearners,
   accessibleOrganizations,
 } from "@/lib/portal/data";
 
 export default async function ContractsPage({ searchParams }: ListPageProps) {
   const query = await searchParams ?? {};
   const actor = await requireCapability("contracts:read");
-  const [page, learners, organizations, people] = await Promise.all([
-    accessibleContractsPage(actor, query),
-    accessibleLearners(actor),
-    accessibleOrganizations(actor),
-    hasRole(actor, "ADMIN") ? serverApiAll<Person>("/api/people") : Promise.resolve([]),
-  ]);
-  const learnerMap = new Map(learners.map((learner) => [learner.id, learner]));
+  const page = await accessibleContractsPage(actor, query);
   const contracts = page.content;
+  const [learners, organizations] = await Promise.all([
+    relatedRecords<Learner>("learners", contracts.map((contract) => contract.learnerId)),
+    accessibleOrganizations(actor),
+  ]);
+  const people = hasRole(actor, "ADMIN") ? await relatedRecords<Person>("people", learners.map((learner) => learner.personId)) : [];
+  const learnerMap = new Map(learners.map((learner) => [learner.id, learner]));
   const personMap = new Map(people.map((person) => [person.id, person.fullName]));
   const organizationMap = new Map(
     organizations.map((organization) => [
@@ -49,7 +48,7 @@ export default async function ContractsPage({ searchParams }: ListPageProps) {
   });
   return (
     <>
-      <PageHeader eyebrow="Percurso contratual" title={hasRole(actor, "LEARNER") ? "Meu contrato" : "Contratos"} description="Aprendiz, organizações, período e integridade documental no mesmo contexto." action={can(actor, "contracts:manage") ? <ContractCreator learners={learners} people={people} organizations={organizations} /> : undefined} />
+      <PageHeader eyebrow="Percurso contratual" title={hasRole(actor, "LEARNER") ? "Meu contrato" : "Contratos"} description="Aprendiz, organizações, período e integridade documental no mesmo contexto." action={can(actor, "contracts:manage") ? <ContractCreator /> : undefined} />
       <DataList key={page.page} pagination={paginationProps(page, query)} records={records} itemLabel="contrato" searchPlaceholder="Buscar aprendiz ou organização" emptyDescription="Nenhum contrato acessível foi encontrado no backend." columns={[
         { key: "learner", label: "Aprendiz", primary: true },
         { key: "company", label: "Empresa" },

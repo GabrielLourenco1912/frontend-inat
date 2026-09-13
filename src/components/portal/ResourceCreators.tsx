@@ -1,20 +1,16 @@
 "use client";
 
-import { apiCatalog } from "@/lib/api/catalog";
+import { SearchSelect } from "@/components/design-system/SearchSelect";
+
 import { ApprenticeshipWorkloadField } from "@/components/portal/ApprenticeshipWorkloadField";
 import { apprenticeshipWorkloadMinutes } from "@/lib/apprenticeship/policy";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { PersonTypeFields } from "@/components/portal/PersonTypeFields";
-import { isEligibleGuardian, isEligibleInstructor } from "@/lib/people/person-types";
-import type { UserResponse } from "@/lib/api/contracts";
 import { deleteResource, postJson, putJson, requestErrorMessage } from "@/lib/api/client";
 import type {
-  Cohort,
-  Learner,
   LessonStatus,
-  Organization,
   OrganizationType,
   Person,
   PersonTypeCode,
@@ -129,10 +125,9 @@ function RequestForm({ close, success, endpoint, successLabel, build, children, 
   return <form onSubmit={submit}>{error ? <p role="alert" className="mx-5 mt-5 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}<div className="grid gap-5 p-5">{children}</div><FormFooter close={close} saving={saving} label={successLabel} /></form>;
 }
 
-export function OrganizationCreator({ organizations: initialOrganizations }: { organizations?: Organization[] }) {
+export function OrganizationCreator() {
   const router = useRouter();
-  const [organizations, setOrganizations] = useState(initialOrganizations ?? []);
-  return <CreatorModal title="Cadastrar organização" trigger="Nova organização" beforeOpen={async () => { if (!initialOrganizations) setOrganizations(await apiCatalog<Organization>("/api/backend/organizations")); }}>{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/organizations" successLabel="Cadastrar organização" build={(form) => ({
+  return <CreatorModal title="Cadastrar organização" trigger="Nova organização">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/organizations" successLabel="Cadastrar organização" build={(form) => ({
     parentOrganizationId: String(form.get("parentOrganizationId") ?? "") || null,
     address: addressFrom(form),
     organizationType: String(form.get("organizationType")) as OrganizationType,
@@ -142,13 +137,11 @@ export function OrganizationCreator({ organizations: initialOrganizations }: { o
     contactEmail: String(form.get("contactEmail") ?? "").trim(),
     phoneNumber: String(form.get("phoneNumber") ?? "").trim(),
     status: String(form.get("status")) as RecordStatus,
-  })}><div className="grid gap-4 sm:grid-cols-2"><label><span className="portal-label">Tipo</span><select name="organizationType" defaultValue="EMPLOYER" className="portal-field mt-2 h-10 w-full px-3"><option value="EMPLOYER">Empresa</option><option value="SCHOOL">Escola</option></select></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativa</option><option value="INACTIVE">Inativa</option><option value="SUSPENDED">Suspensa</option></select></label><label className="sm:col-span-2"><span className="portal-label">Razão social</span><input name="legalName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome fantasia</span><input name="tradeName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">CNPJ</span><input name="taxId" inputMode="numeric" pattern="[0-9]{14}" maxLength={14} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">E-mail</span><input name="contactEmail" type="email" maxLength={254} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Telefone</span><input name="phoneNumber" maxLength={20} className="portal-field mt-2 h-10 w-full px-3" required /></label><label className="sm:col-span-2"><span className="portal-label">Organização superior (opcional)</span><select name="parentOrganizationId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3"><option value="">Nenhuma</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.tradeName || organization.legalName}</option>)}</select></label></div><AddressFields /></RequestForm>}</CreatorModal>;
+  })}><div className="grid gap-4 sm:grid-cols-2"><label><span className="portal-label">Tipo</span><select name="organizationType" defaultValue="EMPLOYER" className="portal-field mt-2 h-10 w-full px-3"><option value="EMPLOYER">Empresa</option><option value="SCHOOL">Escola</option></select></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativa</option><option value="INACTIVE">Inativa</option><option value="SUSPENDED">Suspensa</option></select></label><label className="sm:col-span-2"><span className="portal-label">Razão social</span><input name="legalName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome fantasia</span><input name="tradeName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">CNPJ</span><input name="taxId" inputMode="numeric" pattern="[0-9]{14}" maxLength={14} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">E-mail</span><input name="contactEmail" type="email" maxLength={254} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Telefone</span><input name="phoneNumber" maxLength={20} className="portal-field mt-2 h-10 w-full px-3" required /></label><label className="sm:col-span-2"><span className="portal-label">Organização superior (opcional)</span><SearchSelect name="parentOrganizationId" label="Organização superior" endpoint="/api/backend/lookups/organizations?purpose=parent" /></label></div><AddressFields /></RequestForm>}</CreatorModal>;
 }
 
-export function LearnerOnboardingCreator({ guardianPeople }: { guardianPeople: Person[] }) {
+export function LearnerOnboardingCreator() {
   const router = useRouter();
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-  const eligibleGuardians = guardianPeople.filter((person) => isEligibleGuardian(person, today));
   return <CreatorModal title="Cadastrar aprendiz" trigger="Novo aprendiz">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/learner-onboardings" successLabel="Cadastrar aprendiz" build={(form) => {
     const guardianPersonId = String(form.get("guardianPersonId") ?? "");
     return {
@@ -160,7 +153,7 @@ export function LearnerOnboardingCreator({ guardianPeople }: { guardianPeople: P
       },
       guardians: guardianPersonId ? [{ guardianPersonId, relationshipType: String(form.get("relationshipType") ?? "").trim(), legalGuardian: form.get("legalGuardian") === "on", primaryContact: form.get("primaryContact") === "on" }] : [],
     };
-  }}><div className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">Pessoa, endereço e perfil de aprendiz são enviados em uma única operação. A conta de acesso continua sendo criada apenas pelo cadastro público.</div><PersonFields /><PersonTypeFields requiredType="LEARNER" /><AddressFields /><fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Perfil de aprendiz</legend><label><span className="portal-label">Matrícula</span><input name="registrationNumber" maxLength={30} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="SUSPENDED">Suspenso</option></select></label><label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="hasCompletedHighSchool" type="checkbox" />Ensino médio concluído</label></fieldset><fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Responsável maior de idade (obrigatório para aprendiz menor)</legend><label className="sm:col-span-2"><span className="portal-label">Pessoa responsável</span><select name="guardianPersonId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3"><option value="">Nenhum nesta etapa</option>{eligibleGuardians.map((person) => <option key={person.id} value={person.id}>{person.fullName} · {person.taxId}</option>)}</select></label><label><span className="portal-label">Relação</span><input name="relationshipType" maxLength={30} defaultValue="Responsável" className="portal-field mt-2 h-10 w-full px-3" /></label><div className="grid content-end gap-2 pb-1"><label className="flex items-center gap-2 text-sm"><input name="legalGuardian" type="checkbox" defaultChecked />Responsável legal</label><label className="flex items-center gap-2 text-sm"><input name="primaryContact" type="checkbox" defaultChecked />Contato principal</label></div></fieldset></RequestForm>}</CreatorModal>;
+  }}><div className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">Pessoa, endereço e perfil de aprendiz são enviados em uma única operação. A conta de acesso continua sendo criada apenas pelo cadastro público.</div><PersonFields /><PersonTypeFields requiredType="LEARNER" /><AddressFields /><fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Perfil de aprendiz</legend><label><span className="portal-label">Matrícula</span><input name="registrationNumber" maxLength={30} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="SUSPENDED">Suspenso</option></select></label><label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="hasCompletedHighSchool" type="checkbox" />Ensino médio concluído</label></fieldset><fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Responsável maior de idade (obrigatório para aprendiz menor)</legend><label className="sm:col-span-2"><span className="portal-label">Pessoa responsável</span><SearchSelect name="guardianPersonId" label="Pessoa responsável" endpoint="/api/backend/lookups/people?purpose=guardian" /></label><label><span className="portal-label">Relação</span><input name="relationshipType" maxLength={30} defaultValue="Responsável" className="portal-field mt-2 h-10 w-full px-3" /></label><div className="grid content-end gap-2 pb-1"><label className="flex items-center gap-2 text-sm"><input name="legalGuardian" type="checkbox" defaultChecked />Responsável legal</label><label className="flex items-center gap-2 text-sm"><input name="primaryContact" type="checkbox" defaultChecked />Contato principal</label></div></fieldset></RequestForm>}</CreatorModal>;
 }
 
 export function CohortCreator() {
@@ -178,25 +171,17 @@ export function CohortCreator() {
   })}><div className="grid gap-4 sm:grid-cols-2"><p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-3 text-sm leading-6 sm:col-span-2">Toda turma nasce como planejada. A ativação é feita depois, quando seu período estiver vigente.</p><label><span className="portal-label">Código</span><input name="code" maxLength={40} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome</span><input name="name" maxLength={120} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Dia padrão</span><select name="defaultWeekday" defaultValue="1" className="portal-field mt-2 h-10 w-full px-3"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="7">Domingo</option></select></label><label><span className="portal-label">Turno</span><input name="shiftCode" maxLength={20} placeholder="MANHA" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Capacidade (opcional)</span><input name="maxLearners" type="number" min="1" className="portal-field mt-2 h-10 w-full px-3" /></label></div></RequestForm>}</CreatorModal>;
 }
 
-export function ContractCreator({ learners, people, organizations }: { learners: Learner[]; people: Person[]; organizations: Organization[] }) {
+export function ContractCreator() {
   const router = useRouter();
-  const peopleMap = new Map(people.map((person) => [person.id, person.fullName]));
-  const activePersonIds = new Set(people.filter((person) => person.status === "ACTIVE").map((person) => person.id));
-  const eligibleLearners = learners.filter((learner) => learner.status === "ACTIVE" && activePersonIds.has(learner.personId));
-  const employers = organizations.filter((item) => item.organizationType === "EMPLOYER" && item.status === "ACTIVE");
-  const schools = organizations.filter((item) => item.organizationType === "SCHOOL" && item.status === "ACTIVE");
-  return <CreatorModal title="Criar contrato" trigger="Novo contrato" disabled={!eligibleLearners.length || !employers.length}>{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/contracts" successLabel="Criar contrato" build={(form) => ({ learnerId: String(form.get("learnerId")), employerId: String(form.get("employerId")), schoolId: String(form.get("schoolId") ?? "") || null, startDate: String(form.get("startDate") ?? ""), endDate: String(form.get("endDate") ?? "") || null, monthlySalary: Number(String(form.get("monthlySalary") ?? "").replace(",", ".")), weeklyWorkloadMinutes: apprenticeshipWorkloadMinutes(String(form.get("weeklyWorkloadHours") ?? "")), status: "DRAFT", statusReason: null })}><div className="grid gap-4 sm:grid-cols-2"><p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-3 text-sm leading-6 sm:col-span-2">O contrato será salvo como rascunho. Documentos podem ser adicionados depois e não são exigidos para criá-lo ou ativá-lo.</p><label className="sm:col-span-2"><span className="portal-label">Aprendiz ativo</span><select name="learnerId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{eligibleLearners.map((learner) => <option key={learner.id} value={learner.id}>{peopleMap.get(learner.personId) || learner.registrationNumber}</option>)}</select></label><label><span className="portal-label">Empresa ativa</span><select name="employerId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{employers.map((item) => <option key={item.id} value={item.id}>{item.tradeName || item.legalName}</option>)}</select></label><label><span className="portal-label">Escola ativa (quando aplicável)</span><select name="schoolId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3"><option value="">Sem escola</option>{schools.map((item) => <option key={item.id} value={item.id}>{item.tradeName || item.legalName}</option>)}</select></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Salário mensal</span><input name="monthlySalary" inputMode="decimal" placeholder="1069,48" className="portal-field mt-2 h-10 w-full px-3" required /></label><ApprenticeshipWorkloadField /></div></RequestForm>}</CreatorModal>;
+  return <CreatorModal title="Criar contrato" trigger="Novo contrato">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/contracts" successLabel="Criar contrato" build={(form) => ({ learnerId: String(form.get("learnerId")), employerId: String(form.get("employerId")), schoolId: String(form.get("schoolId") ?? "") || null, startDate: String(form.get("startDate") ?? ""), endDate: String(form.get("endDate") ?? "") || null, monthlySalary: Number(String(form.get("monthlySalary") ?? "").replace(",", ".")), weeklyWorkloadMinutes: apprenticeshipWorkloadMinutes(String(form.get("weeklyWorkloadHours") ?? "")), status: "DRAFT", statusReason: null })}><div className="grid gap-4 sm:grid-cols-2"><p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-3 text-sm leading-6 sm:col-span-2">O contrato será salvo como rascunho. Documentos podem ser adicionados depois e não são exigidos para criá-lo ou ativá-lo.</p><label className="sm:col-span-2"><span className="portal-label">Aprendiz ativo</span><SearchSelect name="learnerId" label="Aprendiz" endpoint="/api/backend/lookups/learners?purpose=contract-learner" required /></label><label><span className="portal-label">Empresa ativa</span><SearchSelect name="employerId" label="Empresa" endpoint="/api/backend/lookups/organizations?purpose=employer" required /></label><label><span className="portal-label">Escola ativa (quando aplicável)</span><SearchSelect name="schoolId" label="Escola" endpoint="/api/backend/lookups/organizations?purpose=school" /></label><label><span className="portal-label">Início</span><input name="startDate" type="date" className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Término (opcional)</span><input name="endDate" type="date" className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Salário mensal</span><input name="monthlySalary" inputMode="decimal" placeholder="1069,48" className="portal-field mt-2 h-10 w-full px-3" required /></label><ApprenticeshipWorkloadField /></div></RequestForm>}</CreatorModal>;
 }
 
-export function LessonCreator({ cohorts, people, users }: { cohorts: Cohort[]; people: Person[]; users: UserResponse[] }) {
+export function LessonCreator() {
   const router = useRouter();
-  const eligibleCohorts = cohorts.filter((cohort) => cohort.status === "ACTIVE");
-  const eligiblePeople = people.filter((person) => isEligibleInstructor(person, users));
   return (
     <CreatorModal
       title="Planejar aula"
       trigger="Nova aula"
-      disabled={!eligibleCohorts.length || !eligiblePeople.length}
     >
       {(close) => (
         <RequestForm
@@ -231,35 +216,11 @@ export function LessonCreator({ cohorts, people, users }: { cohorts: Cohort[]; p
             </label>
             <label>
               <span className="portal-label">Turma</span>
-              <select
-                name="cohortId"
-                defaultValue=""
-                className="portal-field mt-2 h-10 w-full px-3"
-                required
-              >
-                <option value="" disabled>Selecione</option>
-                {eligibleCohorts.map((cohort) => (
-                  <option key={cohort.id} value={cohort.id}>
-                    {cohort.code} · {cohort.name}
-                  </option>
-                ))}
-              </select>
+              <SearchSelect name="cohortId" label="Turma" endpoint="/api/backend/lookups/cohorts?purpose=lesson-cohort" required />
             </label>
             <label>
               <span className="portal-label">Instrutor (pessoa)</span>
-              <select
-                name="instructorPersonId"
-                defaultValue=""
-                className="portal-field mt-2 h-10 w-full px-3"
-                required
-              >
-                <option value="" disabled>Selecione</option>
-                {eligiblePeople.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.fullName}
-                  </option>
-                ))}
-              </select>
+              <SearchSelect name="instructorPersonId" label="Instrutor" endpoint="/api/backend/lookups/people?purpose=instructor" required />
             </label>
             <label>
               <span className="portal-label">Início</span>

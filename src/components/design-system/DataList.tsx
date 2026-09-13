@@ -1,10 +1,12 @@
 "use client";
 
+import { ServerSearch } from "@/components/design-system/ServerSearch";
 import { useClientPagination } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/design-system/Icon";
-import { ListPagination, type ListPaginationProps } from "@/components/design-system/ListPagination";
+import type { Pagination } from "@/lib/pagination";
+import { ListPagination } from "@/components/design-system/ListPagination";
 import { EmptyState, StatusMark } from "@/components/design-system/PortalPrimitives";
 
 export type DataRecord = {
@@ -24,7 +26,7 @@ export type DataColumn = {
 export function DataList({
   records,
   columns,
-  searchPlaceholder = "Buscar nesta página",
+  searchPlaceholder = "Buscar registros",
   statusKey = "state",
   itemLabel = "registro",
   localSearchNote = true,
@@ -41,7 +43,7 @@ export function DataList({
   itemLabel?: string;
   localSearchNote?: boolean;
   searchable?: boolean;
-  pagination?: Omit<ListPaginationProps, "shown">;
+  pagination?: Pagination;
   emptyIcon?: IconName;
   emptyTitle?: string;
   emptyDescription?: string;
@@ -82,7 +84,7 @@ export function DataList({
   return (
     <div className="border border-[var(--inat-line)] bg-white">
       {searchable ? <div className="flex flex-col gap-3 border-b border-[var(--inat-line)] bg-[var(--inat-mist)]/55 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-        <div className="relative min-w-0 flex-1 sm:max-w-md">
+        {pagination ? <ServerSearch key={pagination.search} initialQuery={pagination.search} placeholder={searchPlaceholder} /> : <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Icon
             name="search"
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]"
@@ -95,7 +97,7 @@ export function DataList({
             className="portal-field h-10 w-full bg-white pl-9 pr-3 text-sm"
             aria-label={searchPlaceholder}
           />
-        </div>
+        </div>}
         <div className="flex items-center gap-2">
           {statuses.length > 1 ? (
             <label className="relative flex-1 sm:flex-none">
@@ -128,7 +130,7 @@ export function DataList({
 
       {searchable && localSearchNote ? (
         <div className="border-b border-[var(--inat-line)] bg-white px-4 py-2 text-[0.6875rem] leading-4 text-[var(--inat-muted)]">
-          {pagination ? "A busca filtra somente os registros carregados nesta página." : "A busca filtra todos os registros disponíveis nesta lista."}
+          {pagination ? "A busca consulta todos os registros acessíveis. O filtro de estado se aplica à página atual." : "A busca filtra todos os registros disponíveis nesta lista."}
         </div>
       ) : null}
 

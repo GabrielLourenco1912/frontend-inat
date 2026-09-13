@@ -1,3 +1,4 @@
+import { relatedRecords } from "@/lib/api/related";
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,14 +50,8 @@ export default async function OrganizationDetailPage({
   ).filter((value): value is Learner => value !== null);
 
   const admin = hasRole(actor, "ADMIN");
-  const [memberships, people] = admin
-    ? await Promise.all([
-        serverApiAll<OrganizationMembership>("/api/organization-memberships").then(
-          (items) => items.filter((item) => item.organizationId === organization.id),
-        ),
-        serverApiAll<Person>("/api/people"),
-      ])
-    : [[], []];
+  const memberships = admin ? (await serverApiAll<OrganizationMembership>("/api/organization-memberships")).filter((item) => item.organizationId === organization.id) : [];
+  const people = admin ? await relatedRecords<Person>("people", [...memberships.map((item) => item.personId), ...relatedLearners.map((item) => item.personId)]) : [];
   const personMap = new Map(people.map((person) => [person.id, person.fullName]));
   const learnerPersonMap = new Map(
     relatedLearners.map((learner) => [learner.id, personMap.get(learner.personId)]),
