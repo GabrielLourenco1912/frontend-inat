@@ -56,7 +56,7 @@ export function SearchSelect({ name, label, endpoint, required = false, disabled
   }
   function clear() {
     setSelected(undefined); setQuery(""); setPage(0); setActive(0);
-    onSelect?.(undefined); input.current?.focus();
+    onSelect?.(undefined); setOpen(true); input.current?.focus();
   }
 
   return <div className="relative mt-2" onBlur={(event) => {
