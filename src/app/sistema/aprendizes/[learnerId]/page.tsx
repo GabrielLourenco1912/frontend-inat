@@ -1,3 +1,4 @@
+import { canExportAttendance } from "@/lib/attendance/export-permissions";
 import { personDocumentPage } from "@/lib/documents/pagination";
 import { paginationProps, type ListQuery } from "@/lib/pagination";
 import { notFound } from "next/navigation";
@@ -179,6 +180,7 @@ export default async function LearnerDetailPage({
       canSeeSensitiveContract={!instructor}
       canSeeGuardians={admin}
       canManage={can(actor, "learners:manage")}
+      canExportAttendance={canExportAttendance(actor, "learners")}
     />
   );
 }
