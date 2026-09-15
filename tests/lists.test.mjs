@@ -122,3 +122,15 @@ test("local page controls emit the correct destinations", () => {
   visit(tree);
   assert.deepEqual(destinations, [0, 2]);
 });
+
+test("organization member links open person details without nesting management buttons", () => {
+  const { OrganizationMembershipManager } = load("components/portal/OrganizationMembershipManager");
+  const html = render(OrganizationMembershipManager, { organizationId: "org", people: [{ id: "person-1", fullName: "Marina Costa" }], memberships: [{ id: "member-1", personId: "person-1", membershipRole: "EMPLOYER_MANAGER", jobTitle: "Gestora", startDate: "2026-01-01", endDate: null, status: "ACTIVE" }] });
+  const link = html.match(/<a[^>]+href="\/sistema\/pessoas\/person-1"[^>]*>(.*?)<\/a>/s);
+  assert.ok(link);
+  assert.match(link[1], /Marina Costa/);
+  assert.match(link[1], /Gestora/);
+  assert.doesNotMatch(link[1], /<button/);
+  assert.match(html, /Inativar/);
+  assert.match(html, /Remover vínculo/);
+});

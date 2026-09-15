@@ -1,3 +1,4 @@
+import { AttendanceExportButton } from "@/components/portal/AttendanceExportButton";
 import { relatedRecords } from "@/lib/api/related";
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
@@ -98,7 +99,7 @@ export default async function OrganizationDetailPage({
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <Sheet>
-          <SectionHeading title="Aprendizes vinculados" icon="graduation" />
+          <SectionHeading title="Aprendizes vinculados" icon="graduation" stackOnMobile action={admin ? <AttendanceExportButton scope="organizations" id={organization.id} /> : undefined} />
           {relatedLearners.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{relatedLearners.map((learner) => {
             const contract = contracts.find((item) => item.learnerId === learner.id);
             return <Link key={learner.id} href={`/sistema/aprendizes/${learner.id}`} className="flex items-center gap-3 p-4 hover:bg-[var(--inat-mist)]/35 sm:px-5"><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{learnerPersonMap.get(learner.id) || learner.registrationNumber}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{contract ? formatPeriod(contract.startDate, contract.endDate) : "Contrato relacionado"}</p></div><StatusMark>{apiLabel(learner.status)}</StatusMark></Link>;
