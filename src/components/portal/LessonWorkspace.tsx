@@ -1,5 +1,6 @@
 "use client";
 
+import { ActivityCreator } from "@/components/portal/ActivityCreator";
 import { SearchSelect } from "@/components/design-system/SearchSelect";
 
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
@@ -1088,7 +1089,7 @@ export function LessonWorkspace({
 
       {tab === "atividades" ? (
         <Sheet>
-          <SectionHeading title="Atividades da aula" icon="clipboard" />
+          <SectionHeading title="Atividades da aula" icon="clipboard" stackOnMobile action={canManage && lesson.status !== "CANCELLED" ? <ActivityCreator lesson={lesson} /> : undefined} />
           {lesson.status === "CANCELLED" && activities.length ? (
             <div className="m-4">
               <RestrictionNotice>
