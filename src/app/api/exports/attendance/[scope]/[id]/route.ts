@@ -6,7 +6,12 @@ import { attendanceWorkbook, XLSX_CONTENT_TYPE } from "@/lib/attendance/export-w
 
 export const runtime = "nodejs";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ scope: string; id: string }> }) {
+function validDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    && new Date(`${value}T12:00:00Z`).toISOString().slice(0, 10) === value;
+}
+
+export async function GET(request: Request, { params }: { params: Promise<{ scope: string; id: string }> }) {
   const actor = await getCurrentActor();
   if (!actor) return Response.json({ message: "Entre novamente para exportar as presenças." }, { status: 401 });
   const { scope, id } = await params;
@@ -14,8 +19,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sco
     return Response.json({ message: "Exportação não encontrada." }, { status: 404 });
   }
   if (!canExportAttendance(actor, scope)) return Response.json({ message: "Seu perfil não permite exportar estas presenças." }, { status: 403 });
+  const query = new URL(request.url).searchParams;
+  const startDate = query.get("startDate")?.trim() || undefined;
+  const endDate = query.get("endDate")?.trim() || undefined;
+  if (startDate && !validDate(startDate) || endDate && !validDate(endDate)) {
+    return Response.json({ message: "Informe um período válido para a exportação." }, { status: 400 });
+  }
+  if (startDate && endDate && endDate < startDate) {
+    return Response.json({ message: "A data final não pode ser anterior à data inicial." }, { status: 400 });
+  }
   try {
-    const report = await attendanceExportData(actor, scope, id);
+    const report = await attendanceExportData(actor, scope, id, { startDate, endDate });
     const buffer = await attendanceWorkbook(report);
     return new Response(new Uint8Array(buffer), { headers: {
       "Content-Type": XLSX_CONTENT_TYPE,

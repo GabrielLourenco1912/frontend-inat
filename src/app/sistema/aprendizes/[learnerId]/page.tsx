@@ -82,14 +82,22 @@ export default async function LearnerDetailPage({
   let submissions: ActivitySubmission[] = [];
 
   const academicTab = activeTab === "frequencia" || activeTab === "atividades";
-  if (admin && academicTab) {
-    const [allLessons, participants, allAttendance, allActivities, allSubmissions] =
+  if ((admin || instructor) && activeTab === "frequencia") {
+    attendance = await serverApiAll<AttendanceRecord>(
+      `/api/attendance-records?learnerId=${encodeURIComponent(learner.id)}&activeContractsOnly=false`,
+    );
+    lessons = await Promise.all(
+      [...new Set(attendance.map((record) => record.lessonId))].map((lessonId) =>
+        serverApiGet<Lesson>(`/api/lessons/${encodeURIComponent(lessonId)}`),
+      ),
+    );
+  } else if (admin && activeTab === "atividades") {
+    const [allLessons, participants, allActivities, allSubmissions] =
       await Promise.all([
         accessibleLessons(actor),
         serverApiAll<LessonParticipant>("/api/lesson-participants"),
-        activeTab === "frequencia" ? serverApiAll<AttendanceRecord>("/api/attendance-records") : Promise.resolve([]),
-        activeTab === "atividades" ? serverApiAll<Activity>("/api/activities") : Promise.resolve([]),
-        activeTab === "atividades" ? serverApiGet<ActivitySubmission[]>(`/api/activity-submissions/learner/${encodeURIComponent(learner.id)}`) : Promise.resolve([]),
+        serverApiAll<Activity>("/api/activities"),
+        serverApiGet<ActivitySubmission[]>(`/api/activity-submissions/learner/${encodeURIComponent(learner.id)}`),
       ]);
     const lessonIds = new Set(
       participants
@@ -97,7 +105,6 @@ export default async function LearnerDetailPage({
         .map((participant) => participant.lessonId),
     );
     lessons = allLessons.filter((lesson) => lessonIds.has(lesson.id));
-    attendance = allAttendance.filter((record) => record.learnerId === learner.id);
     activities = allActivities.filter((activity) => lessonIds.has(activity.lessonId));
     submissions = allSubmissions.filter((submission) => submission.learnerId === learner.id);
   } else if (learnerSelf && academicTab) {
@@ -108,7 +115,7 @@ export default async function LearnerDetailPage({
         `/api/activity-submissions/learner/${encodeURIComponent(learner.id)}`,
       ),
     ]);
-  } else if (instructor && academicTab) {
+  } else if (instructor && activeTab === "atividades") {
     const instructorLessons = await accessibleLessons(actor);
     const rosters = await Promise.all(
       instructorLessons.map((lesson) =>
@@ -125,28 +132,16 @@ export default async function LearnerDetailPage({
     );
     lessons = instructorLessons.filter((lesson) => lessonIds.has(lesson.id));
     activities = await accessibleActivities(actor, lessons);
-    const [activitySubmissions, attendanceByLesson] = await Promise.all([
-      Promise.all(
-        activities.map((activity) =>
-          serverApiGet<ActivitySubmission[]>(
-            `/api/activity-submissions/activity/${encodeURIComponent(activity.id)}`,
-          ),
+    const activitySubmissions = await Promise.all(
+      activities.map((activity) =>
+        serverApiGet<ActivitySubmission[]>(
+          `/api/activity-submissions/activity/${encodeURIComponent(activity.id)}`,
         ),
       ),
-      Promise.all(
-        lessons.map((lesson) =>
-          serverApiGet<AttendanceRecord[]>(
-            `/api/attendance-records/lesson/${encodeURIComponent(lesson.id)}`,
-          ),
-        ),
-      ),
-    ]);
+    );
     submissions = activitySubmissions
       .flat()
       .filter((submission) => submission.learnerId === learner.id);
-    attendance = attendanceByLesson
-      .flat()
-      .filter((record) => record.learnerId === learner.id);
   }
 
   const [documentResult, documentTypes] = admin && activeTab === "documentos"

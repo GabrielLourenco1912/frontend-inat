@@ -931,6 +931,35 @@ export function mockApiGet(path: string): MockApiResult {
     }
     return { status: 200, data: page(people.filter((person) => hasPersonType(person, type)), url.searchParams) };
   }
+  if (resource === "attendance-records" && !id) {
+    const startDate = url.searchParams.get("startDate");
+    const endDate = url.searchParams.get("endDate");
+    const learnerId = url.searchParams.get("learnerId");
+    const organizationId = url.searchParams.get("organizationId");
+    const activeContractsOnly = url.searchParams.get("activeContractsOnly") === "true";
+    const filtered = attendanceRecords.filter((record) => {
+      const lesson = lessons.find((candidate) => candidate.id === record.lessonId);
+      if (!lesson) return false;
+      const date = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "America/Sao_Paulo",
+      }).format(new Date(lesson.startsAt));
+      if (startDate && date < startDate || endDate && date > endDate) return false;
+      if (learnerId && record.learnerId !== learnerId) return false;
+      if (!organizationId && !activeContractsOnly) return true;
+      return contracts.some((contract) =>
+        contract.learnerId === record.learnerId
+        && (!organizationId
+          || contract.employerId === organizationId
+          || contract.schoolId === organizationId)
+        && (!activeContractsOnly || contract.status === "ACTIVE"));
+    }).sort((left, right) => {
+      const leftLesson = lessons.find((lesson) => lesson.id === left.lessonId);
+      const rightLesson = lessons.find((lesson) => lesson.id === right.lessonId);
+      return (rightLesson?.startsAt ?? "").localeCompare(leftLesson?.startsAt ?? "")
+        || left.id.localeCompare(right.id);
+    });
+    return { status: 200, data: page(filtered, url.searchParams) };
+  }
   if (resource === "lessons" && id === "me") return { status: 200, data: lessons };
   if (resource === "notification-recipients" && id === "me" && relation === "unread-count") {
     return {
