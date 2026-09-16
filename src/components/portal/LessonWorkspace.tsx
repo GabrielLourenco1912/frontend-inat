@@ -6,7 +6,7 @@ import { SearchSelect } from "@/components/design-system/SearchSelect";
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { ExternalLessonPlayer } from "@/components/portal/ExternalLessonPlayer";
 import {
@@ -18,6 +18,7 @@ import {
   StatusMark,
 } from "@/components/design-system/PortalPrimitives";
 import {
+  apiRequest,
   deleteResource,
   postJson,
   putJson,
@@ -36,16 +37,9 @@ import type {
 } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime, formatTime } from "@/lib/api/format";
 
-type Tab = "resumo" | "participantes" | "chamada" | "atividades" | "historico";
-type AttendanceDraft = {
-  participant: LessonParticipant;
-  recordId?: string;
-  status: AttendanceStatus | "";
-  checkInAt: string;
-  checkOutAt: string;
-  notes: string;
-};
+import { acknowledgeAttendance, attendanceBody, attendanceChanged, localInputValue, reconcileAttendance, saveAttendanceBatch, type AttendanceDraft } from "@/lib/attendance/drafts";
 
+type Tab = "resumo" | "participantes" | "chamada" | "atividades" | "historico";
 const attendanceOptions: AttendanceStatus[] = [
   "PRESENT",
   "ABSENT",
@@ -53,17 +47,6 @@ const attendanceOptions: AttendanceStatus[] = [
   "LATE",
   "PARTIAL",
 ];
-
-function localInputValue(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-}
-
-function isoOrNull(value: string) {
-  return value ? new Date(value).toISOString() : null;
-}
 
 function RestrictionNotice({ children }: { children: ReactNode }) {
   return (
@@ -77,12 +60,14 @@ function ParticipantCreator({
   lessonId,
   deliveryMode,
   allowManualLearnerId,
+  onChanged,
 }: {
   lessonId: string;
   deliveryMode: DeliveryMode;
   allowManualLearnerId: boolean;
+  onChanged: () => void;
 }) {
-  const router = useRouter();
+  const submitting = useRef(false);
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -90,12 +75,14 @@ function ParticipantCreator({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     const form = new FormData(event.currentTarget);
     const learnerId = String(form.get("learnerId") ?? "");
     if (!learnerId) {
       setError("Selecione um aprendiz elegível para esta aula.");
       return;
     }
+    submitting.current = true;
     setSaving(true);
     setError("");
     try {
@@ -110,7 +97,7 @@ function ParticipantCreator({
         assignmentReason: String(form.get("assignmentReason") ?? "").trim(),
       });
       setOpen(false);
-      router.refresh();
+      onChanged();
     } catch (requestError) {
       setError(
         requestErrorMessage(
@@ -119,6 +106,7 @@ function ParticipantCreator({
         ),
       );
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -220,33 +208,21 @@ function ParticipantCreator({
   );
 }
 
-function AttendanceBoard({
-  lesson,
-  participants,
-  attendance,
-}: {
+function AttendanceBoard({ lesson, participants, attendance, refreshing, onChanged }: {
   lesson: Lesson;
   participants: LessonParticipant[];
   attendance: AttendanceRecord[];
+  refreshing: boolean;
+  onChanged: () => void;
 }) {
-  const router = useRouter();
   const locked = lesson.status === "CANCELLED";
-  const attendanceMap = new Map(
-    attendance.map((record) => [record.lessonParticipantId, record]),
-  );
-  const [rows, setRows] = useState<AttendanceDraft[]>(() =>
-    participants.map((participant) => {
-      const record = attendanceMap.get(participant.id);
-      return {
-        participant,
-        recordId: record?.id,
-        status: record?.status ?? "",
-        checkInAt: localInputValue(record?.checkInAt ?? null),
-        checkOutAt: localInputValue(record?.checkOutAt ?? null),
-        notes: record?.notes ?? "",
-      };
-    }),
-  );
+  const submitting = useRef(false);
+  const [source, setSource] = useState({ participants, attendance });
+  const [rows, setRows] = useState<AttendanceDraft[]>(() => reconcileAttendance([], participants, attendance));
+  if (source.participants !== participants || source.attendance !== attendance) {
+    setSource({ participants, attendance });
+    setRows((current) => reconcileAttendance(current, participants, attendance));
+  }
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -264,7 +240,7 @@ function AttendanceBoard({
   function patchRow(id: string, patch: Partial<AttendanceDraft>) {
     setRows((current) =>
       current.map((row) =>
-        row.participant.id === id ? { ...row, ...patch } : row,
+        row.participant.id === id ? { ...row, ...patch, saveState: "idle", error: undefined } : row,
       ),
     );
   }
@@ -285,6 +261,8 @@ function AttendanceBoard({
           ? row
           : {
               ...row,
+              saveState: "idle",
+              error: undefined,
               status: "PRESENT",
               checkInAt: localInputValue(lesson.startsAt),
               checkOutAt: localInputValue(lesson.endsAt),
@@ -293,58 +271,45 @@ function AttendanceBoard({
     );
   }
 
-  async function save() {
-    if (locked) return;
-    const changed = rows.filter(
-      (row) => row.status && row.participant.status !== "CANCELLED",
-    );
-    const invalid = changed.find((row) => {
-      const usesTime = ["PRESENT", "LATE", "PARTIAL"].includes(row.status);
-      if (usesTime && !row.checkInAt) return true;
-      return Boolean(
-        row.checkInAt &&
-          row.checkOutAt &&
-          new Date(row.checkOutAt).getTime() < new Date(row.checkInAt).getTime(),
-      );
-    });
-    if (invalid) {
-      setError(
-        "Revise os horários: presenças exigem entrada, e a saída não pode antecedê-la.",
-      );
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-    setMessage("");
+  async function save(onlyFailed = false) {
+    if (locked || refreshing || submitting.current) return;
+    const failedIds = new Set(rows.filter((row) => row.saveState === "error").map((row) => row.participant.id));
+    submitting.current = true;
+    setSaving(true); setError(""); setMessage("");
     try {
-      await Promise.all(
-        changed.map((row) => {
-          const body = {
-            lessonParticipantId: row.participant.id,
-            status: row.status,
-            checkInAt: isoOrNull(row.checkInAt),
-            checkOutAt: isoOrNull(row.checkOutAt),
-            notes: row.notes.trim() || null,
-          };
-          return row.recordId
-            ? putJson<AttendanceRecord>(
-                `/api/backend/attendance-records/${encodeURIComponent(row.recordId)}`,
-                body,
-              )
-            : postJson<AttendanceRecord>("/api/backend/attendance-records", body);
-        }),
-      );
-      setMessage(`${changed.length} registro(s) de presença salvos no backend.`);
-      router.refresh();
+      let candidates = rows;
+      let confirmed = 0;
+      if (onlyFailed) {
+        // A lost POST response may still have created a record. Recover its ID before retrying.
+        const latest = await apiRequest<AttendanceRecord[]>(`/api/backend/attendance-records/lesson/${encodeURIComponent(lesson.id)}`);
+        candidates = reconcileAttendance(rows, participants, latest);
+        confirmed = candidates.filter((row) => failedIds.has(row.participant.id) && row.saveState === "saved").length;
+        setRows(candidates);
+      }
+      const changed = candidates.filter((row) => attendanceChanged(row) && row.participant.status !== "CANCELLED"
+        && (!onlyFailed || failedIds.has(row.participant.id)));
+      const selected = new Set(changed.map((row) => row.participant.id));
+      setRows((current) => current.map((row) => selected.has(row.participant.id) ? { ...row, saveState: "saving", error: undefined } : row));
+      const result = await saveAttendanceBatch(changed, (row) => {
+        const body = attendanceBody(row);
+        return row.recordId
+          ? putJson<AttendanceRecord>(`/api/backend/attendance-records/${encodeURIComponent(row.recordId)}`, body)
+          : postJson<AttendanceRecord>("/api/backend/attendance-records", body);
+      }, (sent, outcome) => {
+        setRows((current) => current.map((row) => {
+          if (row.participant.id !== sent.participant.id) return row;
+          if (outcome.status === "fulfilled") return acknowledgeAttendance(row, outcome.value);
+          return { ...row, saveState: "error", error: requestErrorMessage(outcome.reason,
+            outcome.reason instanceof Error ? outcome.reason.message : "Não foi possível salvar esta presença.") };
+        }));
+      });
+      const totalSaved = result.saved + confirmed;
+      setMessage(`${totalSaved} ${totalSaved === 1 ? "presença salva" : "presenças salvas"}; ${result.failed} ${result.failed === 1 ? "falhou" : "falharam"}.`);
+      if (result.saved || confirmed) onChanged();
     } catch (requestError) {
-      setError(
-        requestErrorMessage(
-          requestError,
-          "Não foi possível salvar a chamada.",
-        ),
-      );
+      setError(requestErrorMessage(requestError, "Não foi possível atualizar as presenças antes da tentativa. Seus preenchimentos foram mantidos."));
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -391,6 +356,7 @@ function AttendanceBoard({
           <button
             type="button"
             onClick={markMissingPresent}
+            disabled={saving || refreshing}
             className="portal-button portal-button-secondary"
           >
             <Icon name="check" className="size-4" />
@@ -418,9 +384,9 @@ function AttendanceBoard({
         <PaginatedContent resetKey={query}>
         {visible.map((row) => {
           const usesTime = ["PRESENT", "LATE", "PARTIAL"].includes(row.status);
-          const rowLocked = locked || row.participant.status === "CANCELLED";
+          const rowLocked = locked || saving || refreshing || row.participant.status === "CANCELLED";
           return (
-            <article key={row.participant.id} className="grid gap-4 p-4">
+            <article key={row.participant.id} data-participant-id={row.participant.id} className="grid gap-4 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-mono text-xs font-semibold">
@@ -428,6 +394,7 @@ function AttendanceBoard({
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <StatusMark>{apiLabel(row.participant.participationType)}</StatusMark>
+                    <span className="text-xs text-[var(--inat-muted)]">{row.saveState === "saving" ? "Salvando..." : row.saveState === "error" ? "Falha ao salvar" : attendanceChanged(row) ? "Alterações pendentes" : row.recordId ? "Salvo" : "Sem registro"}</span>
                     {row.participant.status === "CANCELLED" ? (
                       <StatusMark>{apiLabel(row.participant.status)}</StatusMark>
                     ) : null}
@@ -451,6 +418,7 @@ function AttendanceBoard({
                   ))}
                 </div>
               </div>
+              {row.error ? <p role="alert" className="border border-rose-200 bg-rose-50 p-2 text-sm text-rose-800">{row.error}</p> : null}
               {usesTime ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-xs text-[var(--inat-muted)]">
@@ -501,14 +469,15 @@ function AttendanceBoard({
         </PaginatedContent>
       </div>
       {!locked ? (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          {rows.some((row) => row.saveState === "error" && row.participant.status !== "CANCELLED") ? <button type="button" onClick={() => save(true)} disabled={saving || refreshing} className="portal-button portal-button-secondary disabled:opacity-50">Tentar novamente os que falharam</button> : null}
           <button
             type="button"
-            onClick={save}
+            onClick={() => save()}
             disabled={
-              saving ||
+              saving || refreshing ||
               !rows.some(
-                (row) => row.status && row.participant.status !== "CANCELLED",
+                (row) => attendanceChanged(row) && row.participant.status !== "CANCELLED",
               )
             }
             className="portal-button portal-button-clay disabled:opacity-50"
@@ -834,6 +803,10 @@ export function LessonWorkspace({
   allowManualLearnerId?: boolean;
 }) {
   const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
+  const [generating, setGenerating] = useState(false);
+  const generatingRef = useRef(false);
+  function refreshRoster() { startRefresh(() => router.refresh()); }
   const [tab, setTab] = useState<Tab>("resumo");
   const [rosterMessage, setRosterMessage] = useState("");
   const [rosterError, setRosterError] = useState("");
@@ -855,7 +828,9 @@ export function LessonWorkspace({
   ];
 
   async function generateRoster() {
-    if (!participantsMutable) return;
+    if (!participantsMutable || generatingRef.current) return;
+    generatingRef.current = true;
+    setGenerating(true);
     setRosterError("");
     setRosterMessage("");
     try {
@@ -868,7 +843,7 @@ export function LessonWorkspace({
       setRosterMessage(
         `${result.createdCount} participante(s) incluídos; ${result.existingCount} já existiam.`,
       );
-      router.refresh();
+      refreshRoster();
     } catch (requestError) {
       setRosterError(
         requestErrorMessage(
@@ -876,6 +851,9 @@ export function LessonWorkspace({
           "Não foi possível gerar a lista regular.",
         ),
       );
+    } finally {
+      generatingRef.current = false;
+      setGenerating(false);
     }
   }
 
@@ -914,7 +892,7 @@ export function LessonWorkspace({
               type="button"
               role="tab"
               aria-selected={tab === item.id}
-              onClick={() => setTab(item.id)}
+              onClick={() => { setTab(item.id); if (item.id === "chamada" || item.id === "participantes") refreshRoster(); }}
               className={`relative min-h-11 px-4 text-sm font-semibold ${
                 tab === item.id
                   ? "text-[var(--inat-teal-dark)]"
@@ -932,6 +910,8 @@ export function LessonWorkspace({
           ))}
         </div>
       </div>
+
+      {(tab === "chamada" || tab === "participantes") && refreshing ? <p role="status" className="mb-4 text-sm text-[var(--inat-muted)]">Atualizando participantes e chamada...</p> : null}
 
       {tab === "resumo" ? (
         <>
@@ -999,14 +979,16 @@ export function LessonWorkspace({
                   <button
                     type="button"
                     onClick={generateRoster}
+                    disabled={generating || refreshing}
                     className="portal-button portal-button-secondary h-9"
                   >
-                    Gerar lista regular
+                    {generating ? "Gerando lista..." : "Gerar lista regular"}
                   </button>
                   <ParticipantCreator
                     lessonId={lesson.id}
                     deliveryMode={lesson.deliveryMode}
                     allowManualLearnerId={allowManualLearnerId}
+                    onChanged={refreshRoster}
                   />
                 </div>
               ) : (
@@ -1079,12 +1061,11 @@ export function LessonWorkspace({
         </Sheet>
       ) : null}
 
-      {tab === "chamada" && canManage ? (
-        <AttendanceBoard
-          lesson={lesson}
-          participants={participants}
-          attendance={attendance}
-        />
+      {canManage ? (
+        <div hidden={tab !== "chamada"}>
+          <AttendanceBoard key={lesson.id} lesson={lesson} participants={participants}
+            attendance={attendance} refreshing={refreshing} onChanged={refreshRoster} />
+        </div>
       ) : null}
 
       {tab === "atividades" ? (
