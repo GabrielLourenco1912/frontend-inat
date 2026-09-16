@@ -52,9 +52,9 @@ async function withRecords(records, run) {
   mock.attendanceRecords.splice(0, mock.attendanceRecords.length, ...records);
   try { await run(); } finally { mock.attendanceRecords.splice(0, mock.attendanceRecords.length, ...original); }
 }
-const request = (scope, id) => GET(new Request("https://local.test"), { params: Promise.resolve({ scope, id }) });
+const request = (scope, id, query = "") => GET(new Request(`https://local.test${query}`), { params: Promise.resolve({ scope, id }) });
 
-test("individual export includes all pages, excludes other learners and produces a readable XLSX", async () => {
+test("individual export paginates only the backend-filtered learner records", async () => {
   const original = mock.attendanceRecords[0];
   const records = Array.from({ length: 225 }, (_, i) => ({ ...original, id: `attendance-${i}`, learnerId: i < 150 ? original.learnerId : "another-learner" }));
   await withRecords(records, async () => {
@@ -67,15 +67,18 @@ test("individual export includes all pages, excludes other learners and produces
     await workbook.xlsx.load(Buffer.from(await response.arrayBuffer()));
     const sheet = workbook.getWorksheet("Presenças");
     assert.equal(sheet.rowCount, 151);
-    assert.equal(workbook.getWorksheet("Resumo").getCell("B6").value, 150);
+    assert.equal(workbook.getWorksheet("Resumo").getCell("B10").value, 150);
     assert.equal(sheet.views[0].state, "frozen");
-    assert.deepEqual(requests.filter((path) => path.startsWith("/api/attendance-records?")), [0, 1, 2].map((page) => `/api/attendance-records?page=${page}&size=100`));
+    assert.deepEqual(
+      requests.filter((path) => path.startsWith("/api/attendance-records?")),
+      [`/api/attendance-records?learnerId=${original.learnerId}&activeContractsOnly=false`],
+    );
   });
 });
 
-test("organization export follows its linked learners without duplicates from multiple contracts", async () => {
+test("organization export delegates active-contract filtering to the backend", async () => {
   const organization = mock.organizations.find((org) => mock.contracts.some((contract) => contract.employerId === org.id));
-  const related = mock.contracts.filter((contract) => contract.employerId === organization.id);
+  const related = mock.contracts.filter((contract) => contract.employerId === organization.id && contract.status === "ACTIVE");
   const ids = new Set(related.map((contract) => contract.learnerId));
   const records = [...ids].map((learnerId, i) => ({ ...mock.attendanceRecords[0], id: `org-${i}`, learnerId }));
   records.push({ ...records[0], id: "foreign", learnerId: "unrelated" });
@@ -88,11 +91,13 @@ test("organization export follows its linked learners without duplicates from mu
       assert.equal(report.rows.length, ids.size);
       assert.ok(report.rows.every((row) => ids.has(row.learner.id)));
       assert.equal(new Set(report.rows.map((row) => row.record.id)).size, report.rows.length);
+      assert.ok(requests.some((path) => path.startsWith(`/api/attendance-records?organizationId=${organization.id}&activeContractsOnly=true`)));
+      assert.ok(!requests.some((path) => path === `/api/contracts/organization/${organization.id}`));
     });
   } finally { mock.contracts.splice(mock.contracts.indexOf(duplicate), 1); }
 });
 
-test("instructors export only the learner's records in lessons they teach", async () => {
+test("instructors use the filtered endpoint without loading every lesson roster", async () => {
   const lesson = mock.lessons[0];
   const foreignLesson = mock.lessons[1];
   const oldInstructor = foreignLesson.instructorPersonId;
@@ -103,16 +108,17 @@ test("instructors export only the learner's records in lessons they teach", asyn
   try {
     await withRecords([
       { ...base, id: "own", lessonId: lesson.id },
-      { ...base, id: "foreign", lessonId: foreignLesson.id },
+      { ...base, id: "foreign", learnerId: "unrelated", lessonId: foreignLesson.id },
       { ...base, id: "another-learner", learnerId: "unrelated", lessonId: lesson.id },
     ], async () => {
       const report = await attendanceExportData(actor, "learners", learner.id);
       assert.deepEqual(report.rows.map((row) => row.record.id), ["own"]);
       assert.equal(report.restricted, true);
-      assert.equal(report.rows[0].learnerName, "");
+      assert.equal(report.rows[0].learnerPerson, undefined);
       assert.ok(!requests.some((path) => path.startsWith("/api/people/")));
       assert.ok(!requests.includes(`/api/attendance-records/lesson/${foreignLesson.id}`));
-      assert.ok(!requests.some((path) => path.startsWith("/api/attendance-records?")));
+      assert.ok(requests.some((path) => path.startsWith(`/api/attendance-records?learnerId=${learner.id}&activeContractsOnly=false`)));
+      assert.ok(!requests.includes("/api/lessons/me"));
     });
   } finally { foreignLesson.instructorPersonId = oldInstructor; }
 });
@@ -138,21 +144,51 @@ test("empty exports retain the headers and do not invent attendance", async () =
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await attendanceWorkbook(report));
     assert.equal(workbook.getWorksheet("Presenças").rowCount, 1);
-    assert.equal(workbook.getWorksheet("Resumo").getCell("B6").value, 0);
+    assert.equal(workbook.getWorksheet("Resumo").getCell("B10").value, 0);
   });
 });
 
-test("workbook preserves leading zeros, accented text, dates and formula-like notes as text", async () => {
+test("workbook includes detailed context and preserves formula-like notes as text", async () => {
   const report = await attendanceExportData(actor, "learners", mock.attendanceRecords[0].learnerId);
   const row = report.rows[0];
-  const special = { ...row, learner: { ...row.learner, registrationNumber: "0000123" }, learnerName: "João & Conceição",
+  const special = { ...row, learner: { ...row.learner, registrationNumber: "0000123" }, learnerPerson: { ...row.learnerPerson, fullName: "João & Conceição" },
     lesson: { ...row.lesson, startsAt: "2026-09-11T01:00:00Z" }, record: { ...row.record, notes: '=HYPERLINK("https://example.test")' } };
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await attendanceWorkbook({ ...report, rows: [special] }));
   const sheet = workbook.getWorksheet("Presenças");
   assert.equal(sheet.getCell("A2").value, "0000123");
   assert.equal(sheet.getCell("B2").value, "João & Conceição");
-  assert.match(sheet.getCell("D2").value, /10\/09\/2026.*22:00/);
-  assert.equal(sheet.getCell("K2").value, special.record.notes);
-  assert.equal(sheet.getCell("K2").type, ExcelJS.ValueType.String);
+  assert.equal(sheet.getCell("D2").value, row.cohort.code);
+  assert.equal(sheet.getCell("E2").value, row.cohort.name);
+  assert.match(sheet.getCell("G2").value, /10\/09\/2026/);
+  assert.equal(sheet.getCell("V2").value, special.record.notes);
+  assert.equal(sheet.getCell("V2").type, ExcelJS.ValueType.String);
+  assert.equal(sheet.autoFilter.toString(), "A1:V1");
+});
+
+test("date range is validated and sent to the filtered attendance query", async () => {
+  const learnerId = mock.attendanceRecords[0].learnerId;
+  const response = await request(
+    "learners",
+    learnerId,
+    "?startDate=2026-08-01&endDate=2026-08-31",
+  );
+  assert.equal(response.status, 200);
+  assert.ok(requests.some((path) => path.startsWith(
+    `/api/attendance-records?learnerId=${learnerId}&activeContractsOnly=false&startDate=2026-08-01&endDate=2026-08-31`,
+  )));
+  assert.equal((await request("learners", learnerId, "?startDate=2026-09-02&endDate=2026-09-01")).status, 400);
+  assert.equal((await request("learners", learnerId, "?startDate=2026-02-30")).status, 400);
+});
+
+test("learner attendance tab uses the learner-filtered endpoint", () => {
+  const page = readFileSync(
+    new URL("../src/app/sistema/aprendizes/[learnerId]/page.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(page, /attendance-records\?learnerId=/);
+  assert.doesNotMatch(
+    page,
+    /serverApiAll<AttendanceRecord>\("\/api\/attendance-records"\)/,
+  );
 });
