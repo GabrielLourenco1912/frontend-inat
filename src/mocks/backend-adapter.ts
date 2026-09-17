@@ -190,7 +190,7 @@ const organizationStatus: Record<string, Organization["status"]> = {
   "Em análise": "INACTIVE",
 } as const;
 
-export const organizations: Organization[] = portalOrganizations.map((organization) => {
+export const organizations: Organization[] = portalOrganizations.map((organization, index) => {
   const [city = "Paranaguá", stateCode = "PR"] = organization.city.split(" · ");
   return {
     id: organization.id,
@@ -202,6 +202,7 @@ export const organizations: Organization[] = portalOrganizations.map((organizati
     taxId: organization.document.replace(/\D/g, ""),
     contactEmail: `${slug(organization.contact)}@${slug(organization.name)}.com.br`,
     phoneNumber: "(41) 3422-0000",
+    attendanceClosingDay: organization.type === "Escola" || index % 2 === 1 ? null : 20,
     status: organizationStatus[organization.state] ?? "INACTIVE",
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
