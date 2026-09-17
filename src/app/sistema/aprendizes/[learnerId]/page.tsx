@@ -19,6 +19,7 @@ import type {
   Person,
 } from "@/lib/api/domain-contracts";
 import { serverApiAll, serverApiGet, serverApiGetOrNull } from "@/lib/api/server";
+import { relatedRecords } from "@/lib/api/related";
 import { requireCapability } from "@/lib/auth/session";
 import { firstQueryValue } from "@/lib/documents/navigation";
 import {
@@ -75,6 +76,9 @@ export default async function LearnerDetailPage({
         : Promise.resolve([]),
       admin && activeTab === "turmas" ? serverApiAll<Cohort>("/api/cohorts") : Promise.resolve([]),
     ]);
+  const guardianPeople = admin && activeTab === "responsaveis"
+    ? await relatedRecords<Person>("people", guardians.map((guardian) => guardian.guardianPersonId))
+    : [];
 
   let lessons: Lesson[] = [];
   let attendance: AttendanceRecord[] = [];
@@ -161,6 +165,7 @@ export default async function LearnerDetailPage({
       contracts={contracts}
       organizations={organizations}
       guardians={guardians}
+      guardianPeople={guardianPeople}
       enrollments={enrollments}
       cohorts={cohorts}
       lessons={lessons}

@@ -6,6 +6,8 @@ import type { Pagination } from "@/lib/pagination";
 import Link from "next/link";
 import { DetailTabs } from "@/components/portal/DetailTabs";
 import { PersonDocumentManager } from "@/components/portal/PersonDocumentManager";
+import { LearnerEditor } from "@/components/portal/EntityEditors";
+import { LearnerGuardianManager } from "@/components/portal/LearnerGuardianManager";
 import {
   DefinitionList,
   EmptyState,
@@ -57,6 +59,7 @@ type Props = {
   contracts: Contract[];
   organizations: Organization[];
   guardians: LearnerGuardian[];
+  guardianPeople: Person[];
   enrollments: CohortEnrollment[];
   cohorts: Cohort[];
   lessons: Lesson[];
@@ -80,7 +83,7 @@ function EmptyPanel({ title, description, icon }: { title: string; description: 
 
 export function LearnerDossier(props: Props) {
   const {
-    learner, person, displayName, contracts, organizations, guardians,
+    learner, person, displayName, contracts, organizations, guardians, guardianPeople,
     enrollments, cohorts, lessons, attendance, activities, submissions,
     documents, documentTypes, canSeeDocuments, canSeeSensitiveContract,
     canSeeGuardians, canManage, activeTab, initialDocumentId,
@@ -116,7 +119,7 @@ export function LearnerDossier(props: Props) {
       <div className="mb-5 flex items-center gap-4 border border-[var(--inat-line)] bg-white p-4">
         <span className="grid size-11 place-items-center bg-[var(--inat-ink)] text-sm font-bold text-white">{initials || "AP"}</span>
         <div><StatusMark>{apiLabel(learner.status)}</StatusMark><p className="mt-1.5 font-mono text-xs text-[var(--inat-muted)]">{learner.id}</p></div>
-        {canManage ? <span className="ml-auto text-xs text-[var(--inat-muted)]">Cadastro administrável pela equipe INAT</span> : null}
+        {canManage ? <div className="ml-auto"><LearnerEditor learner={learner} /></div> : null}
       </div>
 
       <DetailTabs activeTab={tab} tabs={tabs} label="Seções do dossiê" />
@@ -146,7 +149,7 @@ export function LearnerDossier(props: Props) {
           ]} /> : <EmptyState title="Endereço protegido" description="O endpoint de pessoa é restrito ao administrador." icon="shield" />}</Sheet>
         </div> : null}
 
-        {tab === "responsaveis" && canSeeGuardians ? <Sheet><SectionHeading title="Responsáveis vinculados" description="Vínculos retornados pelo cadastro do aprendiz." icon="people" />{guardians.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{guardians.map((guardian) => <div key={guardian.guardianPersonId} className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5"><div><h3 className="text-sm font-semibold">{guardian.guardianName}</h3><p className="mt-1 text-xs text-[var(--inat-muted)]">{guardian.relationshipType}</p></div><div className="flex gap-2">{guardian.primaryContact ? <StatusMark tone="success">Contato principal</StatusMark> : null}{guardian.legalGuardian ? <StatusMark>Responsável legal</StatusMark> : null}</div></div>)}</PaginatedContent></div> : <EmptyPanel title="Nenhum responsável vinculado" description="O backend não retornou responsáveis para este aprendiz." icon="people" />}</Sheet> : null}
+        {tab === "responsaveis" && canSeeGuardians ? <LearnerGuardianManager learner={learner} guardians={guardians} people={guardianPeople} canManage={canManage} /> : null}
 
         {tab === "contrato" && canSeeSensitiveContract ? <Sheet><SectionHeading title="Contratos de aprendizagem" icon="briefcase" />{contracts.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{contracts.map((contract) => <Link key={contract.id} href={`/sistema/contratos/${contract.id}`} className="grid gap-3 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5"><div><p className="text-sm font-semibold">{organizationMap.get(contract.employerId) ?? contract.employerId}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatPeriod(contract.startDate, contract.endDate)} · {formatMinutes(contract.weeklyWorkloadMinutes)} · {formatCurrency(contract.monthlySalary)}</p></div><StatusMark>{apiLabel(contract.status)}</StatusMark></Link>)}</PaginatedContent></div> : <EmptyPanel title="Nenhum contrato acessível" description="Não há contrato retornado para este aprendiz e perfil." icon="briefcase" />}</Sheet> : null}
 
