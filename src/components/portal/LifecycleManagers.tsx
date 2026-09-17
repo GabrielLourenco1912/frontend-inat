@@ -15,12 +15,6 @@ import type {
 } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime } from "@/lib/api/format";
 
-function addOneDay(value: string) {
-  const date = new Date(`${value}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
 function History({ entries }: { entries: LifecycleStatusHistory[] }) {
   const page = useClientPagination([...entries].reverse());
   return entries.length ? (
@@ -58,15 +52,11 @@ export function ContractLifecycleManager({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [endDate, setEndDate] = useState(contract.endDate ?? "");
   const terminal = contract.status === "ENDED" || contract.status === "CANCELLED";
   const todayInsidePeriod = contract.startDate <= today && (!contract.endDate || contract.endDate >= today);
   const canEnd = Boolean(contract.endDate && contract.endDate < today);
-  const minimumEndDate = contract.endDate && contract.endDate >= today
-    ? addOneDay(contract.endDate)
-    : addOneDay(today);
 
-  async function save(status: ContractStatus, statusReason: string | null, requestedEnd = contract.endDate) {
+  async function save(status: ContractStatus, statusReason: string | null) {
     setSaving(true);
     setError("");
     try {
@@ -75,7 +65,7 @@ export function ContractLifecycleManager({
         employerId: contract.employerId,
         schoolId: contract.schoolId,
         startDate: contract.startDate,
-        endDate: requestedEnd,
+        endDate: contract.endDate,
         monthlySalary: contract.monthlySalary,
         weeklyWorkloadMinutes: contract.weeklyWorkloadMinutes,
         status,
@@ -118,13 +108,13 @@ export function ContractLifecycleManager({
     <Sheet>
       <SectionHeading
         title="Ciclo de vida do contrato"
-        description="Identidade e data inicial são permanentes. A data final só pode ser estendida; o cancelamento encerra o contrato na data atual."
+        description="Use as transições para preservar o histórico administrativo do contrato."
         icon="shield"
         action={<StatusMark>{apiLabel(contract.status)}</StatusMark>}
       />
       {error ? <p role="alert" className="mx-5 mt-4 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
       {!terminal ? (
-        <div className="grid gap-5 p-5 lg:grid-cols-2">
+        <div className="p-5">
           <div>
             <p className="portal-label">Transições permitidas</p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -142,33 +132,6 @@ export function ContractLifecycleManager({
               ))}
             </div>
           </div>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void save(contract.status, null, endDate || null);
-            }}
-          >
-            <label>
-              <span className="portal-label">Nova data final</span>
-              <input
-                type="date"
-                value={endDate}
-                min={minimumEndDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                className="portal-field mt-2 h-10 w-full px-3"
-              />
-            </label>
-            <p className="mt-2 text-xs leading-5 text-[var(--inat-muted)]">
-              Use uma data futura posterior à atual. Deixar vazio transforma um prazo finito em indeterminado.
-            </p>
-            <button
-              type="submit"
-              disabled={saving || endDate === (contract.endDate ?? "")}
-              className="portal-button portal-button-primary mt-3 h-9 disabled:opacity-45"
-            >
-              Salvar prazo
-            </button>
-          </form>
         </div>
       ) : (
         <p className="px-5 py-4 text-sm text-[var(--inat-muted)]">
@@ -194,23 +157,22 @@ export function CohortLifecycleManager({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [capacity, setCapacity] = useState(cohort.maxLearners?.toString() ?? "");
   const terminal = cohort.status === "COMPLETED" || cohort.status === "CANCELLED";
   const todayInsidePeriod = cohort.startDate <= today && (!cohort.endDate || cohort.endDate >= today);
   const canComplete = Boolean(cohort.endDate && cohort.endDate < today && !hasOpenLessons);
 
-  async function save(status: CohortStatus, statusReason: string | null, maxLearners = cohort.maxLearners) {
+  async function save(status: CohortStatus, statusReason: string | null, values?: FormData) {
     setSaving(true);
     setError("");
     try {
       await putJson<Cohort>(`/api/backend/cohorts/${encodeURIComponent(cohort.id)}`, {
-        code: cohort.code,
-        name: cohort.name,
-        defaultWeekday: cohort.defaultWeekday,
-        shiftCode: cohort.shiftCode,
-        startDate: cohort.startDate,
-        endDate: cohort.endDate,
-        maxLearners,
+        code: values ? String(values.get("code")) : cohort.code,
+        name: values ? String(values.get("name")) : cohort.name,
+        defaultWeekday: values ? Number(values.get("defaultWeekday")) : cohort.defaultWeekday,
+        shiftCode: values ? String(values.get("shiftCode")) : cohort.shiftCode,
+        startDate: values ? String(values.get("startDate")) : cohort.startDate,
+        endDate: values ? String(values.get("endDate") ?? "") || null : cohort.endDate,
+        maxLearners: values ? String(values.get("maxLearners") ?? "") ? Number(values.get("maxLearners")) : null : cohort.maxLearners,
         status,
         statusReason,
       });
@@ -247,19 +209,18 @@ export function CohortLifecycleManager({
             </div>
           </div>
           <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void save(cohort.status, null, capacity ? Number(capacity) : null);
-            }}
+            onSubmit={(event) => { event.preventDefault(); void save(cohort.status, null, new FormData(event.currentTarget)); }}
+            className="grid gap-4 sm:grid-cols-2 lg:col-span-2"
           >
-            <label>
-              <span className="portal-label">Capacidade de aprendizes</span>
-              <input type="number" min={Math.max(1, reservedCount)} value={capacity} onChange={(event) => setCapacity(event.target.value)} className="portal-field mt-2 h-10 w-full px-3" />
-            </label>
-            <p className="mt-2 text-xs leading-5 text-[var(--inat-muted)]">
-              Matrículas pendentes e ativas reservam vaga; o limite não pode ficar abaixo de {reservedCount}.
-            </p>
-            <button type="submit" disabled={saving || capacity === (cohort.maxLearners?.toString() ?? "")} className="portal-button portal-button-primary mt-3 h-9 disabled:opacity-45">Salvar capacidade</button>
+            <label><span className="portal-label">Código</span><input name="code" defaultValue={cohort.code} disabled={cohort.status !== "PLANNED"} required className="portal-field mt-2 h-10 w-full px-3 disabled:bg-[var(--inat-paper)]" />{cohort.status !== "PLANNED" ? <input type="hidden" name="code" value={cohort.code} /> : null}</label>
+            <label><span className="portal-label">Nome</span><input name="name" defaultValue={cohort.name} required className="portal-field mt-2 h-10 w-full px-3" /></label>
+            <label><span className="portal-label">Dia padrão</span><select name="defaultWeekday" defaultValue={cohort.defaultWeekday} className="portal-field mt-2 h-10 w-full px-3"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="7">Domingo</option></select></label>
+            <label><span className="portal-label">Turno</span><input name="shiftCode" defaultValue={cohort.shiftCode} required className="portal-field mt-2 h-10 w-full px-3" /></label>
+            <label><span className="portal-label">Início</span><input name="startDate" type="date" defaultValue={cohort.startDate} required className="portal-field mt-2 h-10 w-full px-3" /></label>
+            <label><span className="portal-label">Término</span><input name="endDate" type="date" defaultValue={cohort.endDate ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
+            <label><span className="portal-label">Capacidade</span><input name="maxLearners" type="number" min={Math.max(1, reservedCount)} defaultValue={cohort.maxLearners ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
+            <div className="flex items-end"><button type="submit" disabled={saving} className="portal-button portal-button-primary h-10 disabled:opacity-45">Salvar dados da turma</button></div>
+            <p className="text-xs leading-5 text-[var(--inat-muted)] sm:col-span-2">A capacidade não pode ficar abaixo das {reservedCount} vagas já reservadas. O código fica fixo após a ativação.</p>
           </form>
         </div>
       ) : <p className="px-5 py-4 text-sm text-[var(--inat-muted)]">Turmas concluídas ou canceladas são somente leitura.</p>}

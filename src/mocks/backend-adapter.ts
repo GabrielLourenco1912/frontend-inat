@@ -324,6 +324,7 @@ export const contracts: Contract[] = portalContracts.map((contract) => {
     weeklyWorkloadMinutes: Number(contract.workload.match(/\d+/)?.[0] ?? 20) * 60,
     status: contract.state === "Suspenso" ? "SUSPENDED" : "ACTIVE",
     statusHistory: [],
+    schoolHistory: [],
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   };

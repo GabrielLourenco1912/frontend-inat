@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ContractDocumentManager } from "@/components/portal/ContractDocumentManager";
 import { DetailTabs } from "@/components/portal/DetailTabs";
 import { ContractLifecycleManager } from "@/components/portal/LifecycleManagers";
+import { ContractEditor } from "@/components/portal/EntityEditors";
 import {
   DefinitionList,
   EmptyState,
@@ -18,7 +19,7 @@ import type {
   DocumentType,
   Person,
 } from "@/lib/api/domain-contracts";
-import { apiLabel, formatCurrency, formatMinutes, formatPeriod } from "@/lib/api/format";
+import { apiLabel, formatCurrency, formatDateTime, formatMinutes, formatPeriod } from "@/lib/api/format";
 import { serverApiAll, serverApiGetOrNull } from "@/lib/api/server";
 import { requireCapability } from "@/lib/auth/session";
 import { accessibleLearners, accessibleOrganizations } from "@/lib/portal/data";
@@ -62,6 +63,7 @@ export default async function ContractDetailPage({
       organization.tradeName || organization.legalName,
     ]),
   );
+  const organizationNames = Object.fromEntries(organizationMap);
   const learnerName =
     person?.fullName ||
     (contract.learnerId === actor.learnerId ? actor.name : learner?.registrationNumber) ||
@@ -84,7 +86,7 @@ export default async function ContractDetailPage({
       {tab === "dados" ? <>
       <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
         <Sheet>
-          <SectionHeading title="Dados contratuais" icon="briefcase" />
+          <SectionHeading title="Dados contratuais" icon="briefcase" action={admin ? <ContractEditor contract={contract} learnerName={learnerName} organizationNames={organizationNames} /> : undefined} />
           <DefinitionList columns={2} items={[
             { label: "Aprendiz", value: learnerName },
             { label: "Empresa", value: organizationMap.get(contract.employerId) ?? contract.employerId },
@@ -105,6 +107,7 @@ export default async function ContractDetailPage({
           ]} />
         </Sheet>
       </div>
+      {contract.schoolHistory?.length ? <div className="mt-5"><Sheet><SectionHeading title="Histórico de escola" description="Cada alteração mantém a escola anterior, a nova escola e o momento da mudança." icon="building" /><div className="divide-y divide-[var(--inat-line)]">{[...contract.schoolHistory].reverse().map((change) => <div key={change.id} className="grid gap-2 p-4 text-sm sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"><div><p className="font-semibold">{change.previousSchoolId ? organizationMap.get(change.previousSchoolId) ?? change.previousSchoolId : "Sem escola"} → {change.newSchoolId ? organizationMap.get(change.newSchoolId) ?? change.newSchoolId : "Sem escola"}</p>{change.changedByUserId ? <p className="mt-1 text-xs text-[var(--inat-muted)]">Alterado pelo usuário {change.changedByUserId}</p> : null}</div><time className="text-xs text-[var(--inat-muted)]">{formatDateTime(change.changedAt)}</time></div>)}</div></Sheet></div> : null}
       {admin ? <div className="mt-5"><ContractLifecycleManager contract={contract} today={today} /></div> : null}
       </> : admin ? <ContractDocumentManager key={`${contract.id}:${documentResult?.page.page}:${firstQueryValue(query.document) ?? ""}`} contractId={contract.id} contractStatus={contract.status} documents={documentResult?.page.content ?? []} focusedDocument={documentResult?.focusedDocument} pagination={documentResult ? paginationProps(documentResult.page, { ...query, document: undefined, tab: "documentos" }) : undefined} documentTypes={documentTypes} initialDocumentId={firstQueryValue(query.document)} /> : <Sheet><EmptyState title="Documentos contratuais protegidos" description="O backend restringe versões e binários contratuais à administração." icon="shield" /></Sheet>}
     </>

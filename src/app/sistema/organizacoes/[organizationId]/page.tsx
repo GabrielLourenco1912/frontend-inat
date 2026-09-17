@@ -13,7 +13,7 @@ import {
 } from "@/components/design-system/PortalPrimitives";
 import { hasRole } from "@/domain/auth";
 import { OrganizationMembershipManager } from "@/components/portal/OrganizationMembershipManager";
-import { OrganizationAttendanceClosingDayEditor } from "@/components/portal/OrganizationAttendanceClosingDayEditor";
+import { OrganizationEditor } from "@/components/portal/EntityEditors";
 import type {
   Contract,
   Learner,
@@ -71,7 +71,7 @@ export default async function OrganizationDetailPage({
       />
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Sheet>
-          <SectionHeading title="Identificação e contato" icon="building" action={admin ? <OrganizationAttendanceClosingDayEditor organization={organization} /> : undefined} />
+          <SectionHeading title="Identificação e contato" icon="building" action={admin ? <OrganizationEditor organization={organization} hasContracts={contracts.length > 0} /> : undefined} />
           <DefinitionList columns={2} items={[
             { label: "Razão social", value: organization.legalName },
             { label: "Nome fantasia", value: organization.tradeName || "Não informado" },

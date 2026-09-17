@@ -161,8 +161,17 @@ export type Contract = {
   weeklyWorkloadMinutes: number;
   status: ContractStatus;
   statusHistory: LifecycleStatusHistory[];
+  schoolHistory: ContractSchoolChange[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type ContractSchoolChange = {
+  id: string;
+  previousSchoolId: string | null;
+  newSchoolId: string | null;
+  changedByUserId: string | null;
+  changedAt: string;
 };
 
 export type Lesson = {
