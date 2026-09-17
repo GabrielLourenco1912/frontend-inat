@@ -72,6 +72,7 @@ export type Organization = {
   taxId: string;
   contactEmail: string;
   phoneNumber: string;
+  attendanceClosingDay: number | null;
   status: RecordStatus;
   createdAt: string;
   updatedAt: string;

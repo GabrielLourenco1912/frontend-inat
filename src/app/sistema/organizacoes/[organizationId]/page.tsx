@@ -13,6 +13,7 @@ import {
 } from "@/components/design-system/PortalPrimitives";
 import { hasRole } from "@/domain/auth";
 import { OrganizationMembershipManager } from "@/components/portal/OrganizationMembershipManager";
+import { OrganizationAttendanceClosingDayEditor } from "@/components/portal/OrganizationAttendanceClosingDayEditor";
 import type {
   Contract,
   Learner,
@@ -70,7 +71,7 @@ export default async function OrganizationDetailPage({
       />
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Sheet>
-          <SectionHeading title="Identificação e contato" icon="building" />
+          <SectionHeading title="Identificação e contato" icon="building" action={admin ? <OrganizationAttendanceClosingDayEditor organization={organization} /> : undefined} />
           <DefinitionList columns={2} items={[
             { label: "Razão social", value: organization.legalName },
             { label: "Nome fantasia", value: organization.tradeName || "Não informado" },
@@ -78,6 +79,7 @@ export default async function OrganizationDetailPage({
             { label: "Tipo", value: apiLabel(organization.organizationType) },
             { label: "E-mail", value: organization.contactEmail },
             { label: "Telefone", value: organization.phoneNumber },
+            { label: "Fechamento de ponto", value: organization.attendanceClosingDay ? `Dia ${organization.attendanceClosingDay} de cada mês` : "Não informado" },
             { label: "Logradouro", value: `${organization.address.street}, ${organization.address.streetNumber}` },
             { label: "Cidade", value: `${organization.address.city}/${organization.address.stateCode}` },
             { label: "CEP", value: organization.address.postalCode, mono: true },
