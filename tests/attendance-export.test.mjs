@@ -65,8 +65,10 @@ test("individual export paginates only the backend-filtered learner records", as
     assert.match(response.headers.get("content-disposition"), /\.xlsx"$/);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(Buffer.from(await response.arrayBuffer()));
-    const sheet = workbook.getWorksheet("Presenças");
-    assert.equal(sheet.rowCount, 151);
+    const sheet = workbook.getWorksheet("Espelho de ponto");
+    assert.equal(sheet.getCell("A1").value, "ESPELHO DE PONTO · APRENDIZAGEM");
+    assert.equal(sheet.getColumn(1).values.filter((value) => value === "Data").length, 1);
+    assert.equal(sheet.getColumn(1).values.filter((value) => typeof value === "string" && value.startsWith("TOTAL ·")).length, 1);
     assert.equal(workbook.getWorksheet("Resumo").getCell("B10").value, 150);
     assert.equal(sheet.views[0].state, "frozen");
     assert.deepEqual(
@@ -143,27 +145,45 @@ test("empty exports retain the headers and do not invent attendance", async () =
     const report = await attendanceExportData(actor, "learners", mock.learners[0].id);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await attendanceWorkbook(report));
-    assert.equal(workbook.getWorksheet("Presenças").rowCount, 1);
+    assert.match(workbook.getWorksheet("Espelho de ponto").getCell("A8").value, /Nenhum registro/);
     assert.equal(workbook.getWorksheet("Resumo").getCell("B10").value, 0);
   });
 });
 
-test("workbook includes detailed context and preserves formula-like notes as text", async () => {
+test("workbook formats one point row per lesson and preserves formula-like notes as text", async () => {
   const report = await attendanceExportData(actor, "learners", mock.attendanceRecords[0].learnerId);
   const row = report.rows[0];
   const special = { ...row, learner: { ...row.learner, registrationNumber: "0000123" }, learnerPerson: { ...row.learnerPerson, fullName: "João & Conceição" },
     lesson: { ...row.lesson, startsAt: "2026-09-11T01:00:00Z" }, record: { ...row.record, notes: '=HYPERLINK("https://example.test")' } };
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await attendanceWorkbook({ ...report, rows: [special] }));
-  const sheet = workbook.getWorksheet("Presenças");
-  assert.equal(sheet.getCell("A2").value, "0000123");
-  assert.equal(sheet.getCell("B2").value, "João & Conceição");
-  assert.equal(sheet.getCell("D2").value, row.cohort.code);
-  assert.equal(sheet.getCell("E2").value, row.cohort.name);
-  assert.match(sheet.getCell("G2").value, /10\/09\/2026/);
-  assert.equal(sheet.getCell("V2").value, special.record.notes);
-  assert.equal(sheet.getCell("V2").type, ExcelJS.ValueType.String);
-  assert.equal(sheet.autoFilter.toString(), "A1:V1");
+  const sheet = workbook.getWorksheet("Espelho de ponto");
+  const header = sheet.getColumn(1).values.findIndex((value) => value === "Data");
+  const detail = header + 1;
+  assert.match(sheet.getCell(detail, 1).value, /10\/09\/2026/);
+  assert.equal(sheet.getCell(detail, 3).value, special.lesson.title);
+  assert.match(sheet.getCell(detail, 4).value, new RegExp(row.cohort.code));
+  assert.match(sheet.getCell(detail, 7).value, special.record.checkInAt ? /^\d{2}:\d{2}$/ : /^—$/);
+  assert.equal(sheet.getCell(detail, 14).value, special.record.notes);
+  assert.equal(sheet.getCell(detail, 14).type, ExcelJS.ValueType.String);
+  assert.equal(sheet.getCell(detail, 9).numFmt, "[h]:mm");
+  assert.equal(sheet.getCell(detail, 10).numFmt, "[h]:mm");
+  assert.match(sheet.getCell(header - 2, 1).value, /João & Conceição/);
+});
+
+test("organization workbook creates a separate point block and subtotal per learner", async () => {
+  const first = await attendanceExportData(actor, "learners", mock.attendanceRecords[0].learnerId);
+  const rows = [
+    first.rows[0],
+    { ...first.rows[0], record: { ...first.rows[0].record, id: "second-record" }, learner: { ...first.rows[0].learner, id: "second-learner", registrationNumber: "MAT-2" }, learnerPerson: { ...first.rows[0].learnerPerson, id: "second-person", fullName: "Outro Aprendiz" } },
+  ];
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await attendanceWorkbook({ ...first, scope: "organizations", title: "Organização teste", learnerCount: 2, rows }));
+  const sheet = workbook.getWorksheet("Espelho de ponto");
+  const values = sheet.getColumn(1).values.filter((value) => typeof value === "string");
+  assert.equal(values.filter((value) => value.startsWith("APRENDIZ ·")).length, 2);
+  assert.equal(values.filter((value) => value.startsWith("TOTAL ·")).length, 2);
+  assert.equal(values.filter((value) => value === "Data").length, 2);
 });
 
 test("date range is validated and sent to the filtered attendance query", async () => {
