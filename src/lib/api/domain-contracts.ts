@@ -32,6 +32,12 @@ export type NotificationDeliveryStatus =
   | "DELIVERED"
   | "FAILED"
   | "CANCELLED";
+export type ContactMessageType =
+  | "YOUTH_INTERESTED"
+  | "COMPANY"
+  | "FAMILY_OR_GUARDIAN"
+  | "OTHER";
+export type ContactMessageStatus = "NEW" | "READ" | "ARCHIVED";
 
 export type Address = {
   id: string;
@@ -349,6 +355,18 @@ export type NotificationRecipient = {
   priority: NotificationPriority;
   scheduledAt: string | null;
   expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  contactType: ContactMessageType;
+  message: string;
+  status: ContactMessageStatus;
   createdAt: string;
   updatedAt: string;
 };
