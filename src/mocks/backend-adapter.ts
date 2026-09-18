@@ -14,6 +14,7 @@ import type {
   CohortEnrollment,
   Contract,
   ContractDocument,
+  ContactMessage,
   DocumentType,
   Learner,
   LearnerGuardian,
@@ -691,6 +692,42 @@ export const notificationRecipients: NotificationRecipient[] = portalNotices.map
   updatedAt: UPDATED_AT,
 }));
 
+export const contactMessages: ContactMessage[] = [
+  {
+    id: "contato-01",
+    name: "Juliana Ferreira",
+    email: "juliana.ferreira@email.com",
+    phone: "(41) 99942-1800",
+    contactType: "YOUTH_INTERESTED",
+    message: "Gostaria de saber quando abrem as inscrições para os próximos cursos e quais documentos preciso levar.",
+    status: "NEW",
+    createdAt: "2026-08-21T13:35:00.000Z",
+    updatedAt: "2026-08-21T13:35:00.000Z",
+  },
+  {
+    id: "contato-02",
+    name: "Ricardo Oliveira",
+    email: "ricardo@empresaexemplo.com.br",
+    phone: "(41) 3422-0088",
+    contactType: "COMPANY",
+    message: "Nossa empresa quer entender como funciona a parceria para contratação de jovens aprendizes.",
+    status: "READ",
+    createdAt: "2026-08-20T17:10:00.000Z",
+    updatedAt: "2026-08-21T10:00:00.000Z",
+  },
+  {
+    id: "contato-03",
+    name: "Patrícia Santos",
+    email: "patricia.santos@email.com",
+    phone: null,
+    contactType: "FAMILY_OR_GUARDIAN",
+    message: "Sou responsável por um adolescente e gostaria de conhecer os programas oferecidos pelo INAT.",
+    status: "ARCHIVED",
+    createdAt: "2026-08-18T14:20:00.000Z",
+    updatedAt: "2026-08-20T12:45:00.000Z",
+  },
+];
+
 const currentRoles: RoleRecord[] = [
   { id: 1, code: "ADMIN", name: "Administrador", description: "Operação completa do sistema." },
   { id: 2, code: "INSTRUCTOR", name: "Instrutor", description: "Aulas, chamada, atividades e correções." },
@@ -826,6 +863,7 @@ const collections: Record<string, unknown[]> = {
   "contract-documents": contractDocuments,
   notifications,
   "notification-recipients": notificationRecipients,
+  "contact-messages": contactMessages,
   roles,
   users,
 };
@@ -903,6 +941,18 @@ export function mockApiGet(path: string): MockApiResult {
 
   if (resource === "search" || resource === "lookups") return mockSearch(id, url.searchParams, resource === "lookups");
   if (resource === "me") return { status: 200, data: mockCurrentUser };
+  if (resource === "contact-messages" && !id) {
+    const search = (url.searchParams.get("search") ?? "").trim().toLocaleLowerCase("pt-BR");
+    const status = url.searchParams.get("status");
+    const contactType = url.searchParams.get("contactType");
+    const filtered = contactMessages
+      .filter((message) => !status || message.status === status)
+      .filter((message) => !contactType || message.contactType === contactType)
+      .filter((message) => !search || [message.name, message.email, message.message]
+        .some((value) => value.toLocaleLowerCase("pt-BR").includes(search)))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return { status: 200, data: page(filtered, url.searchParams) };
+  }
   if (resource === "person-documents" && !id) {
     const personId = url.searchParams.get("personId");
     const status = url.searchParams.get("verificationStatus");
@@ -1037,6 +1087,12 @@ export function mockMutationData(
   if (method === "DELETE") return null;
   const segments = new URL(path, "http://mock.inat.local").pathname.split("/").filter(Boolean);
   const resource = segments.at(-1) ?? "registro";
+  if (segments[1] === "contact-messages" && resource === "status") {
+    const original = contactMessages.find((message) => message.id === segments[2]);
+    return original
+      ? { ...original, ...body, updatedAt: new Date().toISOString() }
+      : null;
+  }
   const pathId = segments.length > 2 && !["grade", "read", "delivery", "files", "roles"].includes(resource)
     ? resource
     : undefined;
