@@ -30,12 +30,14 @@ export function statusTone(label: string): StatusTone {
     value.includes("verificado") ||
     value.includes("avaliada") ||
     value.includes("entregue") ||
-    value.includes("disponível")
+    value.includes("disponível") ||
+    value.includes("lida")
   ) {
     return "success";
   }
   if (
     value.includes("pendente") ||
+    value.includes("nova") ||
     value.includes("andamento") ||
     value.includes("atraso") ||
     value.includes("análise") ||

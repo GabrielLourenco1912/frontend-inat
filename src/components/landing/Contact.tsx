@@ -2,15 +2,54 @@
 
 import { FormEvent, useState } from "react";
 import { ContactTypeSelect } from "@/components/landing/ContactTypeSelect";
+import { ApiRequestError, postJson } from "@/lib/api/client";
+import type {
+  ContactMessage,
+  ContactMessageType,
+} from "@/lib/api/domain-contracts";
 import { CONTACT_INFO, INSTITUTION_ADDRESS } from "@/lib/constants";
 
 export function Contact() {
-  const [status, setStatus] = useState("");
+  const [feedback, setFeedback] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [sending, setSending] = useState(false);
+  const [selectKey, setSelectKey] = useState(0);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // TODO: Integrate with an API route, EmailJS, Resend or another mail service.
-    setStatus("Mensagem preparada para envio. Integração pendente.");
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const body = {
+      name: String(fields.get("name") ?? "").trim(),
+      email: String(fields.get("email") ?? "").trim(),
+      phone: String(fields.get("phone") ?? "").trim() || null,
+      contactType: String(fields.get("contactType")) as ContactMessageType,
+      message: String(fields.get("message") ?? "").trim(),
+    };
+
+    setSending(true);
+    setFeedback(null);
+    try {
+      await postJson<ContactMessage>("/api/contact-messages", body);
+      form.reset();
+      setSelectKey((current) => current + 1);
+      setFeedback({
+        tone: "success",
+        message: "Mensagem enviada. A equipe do INAT entrará em contato.",
+      });
+    } catch (error) {
+      setFeedback({
+        tone: "error",
+        message:
+          error instanceof ApiRequestError && error.status === 400
+            ? "Revise os campos informados e tente novamente."
+            : "Não foi possível enviar sua mensagem. Tente novamente em instantes.",
+      });
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -39,6 +78,8 @@ export function Contact() {
                   name="name"
                   type="text"
                   required
+                  maxLength={150}
+                  autoComplete="name"
                   className="field mt-2 w-full px-4"
                 />
               </div>
@@ -54,6 +95,8 @@ export function Contact() {
                   name="email"
                   type="email"
                   required
+                  maxLength={254}
+                  autoComplete="email"
                   className="field mt-2 w-full px-4"
                 />
               </div>
@@ -71,6 +114,8 @@ export function Contact() {
                   id="phone"
                   name="phone"
                   type="tel"
+                  maxLength={30}
+                  autoComplete="tel"
                   className="field mt-2 w-full px-4"
                 />
               </div>
@@ -82,7 +127,7 @@ export function Contact() {
                 >
                   Tipo de contato
                 </label>
-                <ContactTypeSelect />
+                <ContactTypeSelect key={selectKey} />
               </div>
             </div>
 
@@ -97,6 +142,7 @@ export function Contact() {
                 id="message"
                 name="message"
                 required
+                maxLength={5000}
                 rows={6}
                 className="field mt-2 w-full px-4 py-3"
               />
@@ -104,17 +150,23 @@ export function Contact() {
 
             <button
               type="submit"
+              disabled={sending}
+              aria-busy={sending}
               className="btn-base btn-primary w-full sm:w-fit"
             >
-              Enviar mensagem
+              {sending ? "Enviando..." : "Enviar mensagem"}
             </button>
 
-            {status ? (
+            {feedback ? (
               <p
-                className="rounded-lg bg-[rgba(8,130,133,0.1)] px-4 py-3 text-sm font-semibold text-[var(--inat-primary)]"
-                role="status"
+                className={`rounded-lg px-4 py-3 text-sm font-semibold ${
+                  feedback.tone === "success"
+                    ? "bg-[rgba(8,130,133,0.1)] text-[var(--inat-primary)]"
+                    : "bg-rose-50 text-rose-800"
+                }`}
+                role={feedback.tone === "error" ? "alert" : "status"}
               >
-                {status}
+                {feedback.message}
               </p>
             ) : null}
           </form>

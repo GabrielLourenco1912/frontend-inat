@@ -3,15 +3,15 @@
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
 const contactTypes = [
-  "Jovem interessado",
-  "Empresa",
-  "Família/responsável",
-  "Outro",
-];
+  { value: "YOUTH_INTERESTED", label: "Jovem interessado" },
+  { value: "COMPANY", label: "Empresa" },
+  { value: "FAMILY_OR_GUARDIAN", label: "Família/responsável" },
+  { value: "OTHER", label: "Outro" },
+] as const;
 
 export function ContactTypeSelect() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState(contactTypes[0]);
+  const [selectedType, setSelectedType] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,8 +27,6 @@ export function ContactTypeSelect() {
   }, []);
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    const currentIndex = contactTypes.indexOf(selectedType);
-
     if (event.key === "Escape") {
       setIsOpen(false);
       return;
@@ -44,15 +42,15 @@ export function ContactTypeSelect() {
       event.preventDefault();
       setIsOpen(true);
       const direction = event.key === "ArrowDown" ? 1 : -1;
-      const nextIndex =
-        (currentIndex + direction + contactTypes.length) % contactTypes.length;
-      setSelectedType(contactTypes[nextIndex]);
+      setSelectedType(
+        (current) => (current + direction + contactTypes.length) % contactTypes.length,
+      );
     }
   }
 
   return (
     <div ref={wrapperRef} className="relative mt-2">
-      <input type="hidden" name="contactType" value={selectedType} />
+      <input type="hidden" name="contactType" value={contactTypes[selectedType].value} />
       <button
         id="contactType"
         type="button"
@@ -63,7 +61,7 @@ export function ContactTypeSelect() {
         onClick={() => setIsOpen((current) => !current)}
         onKeyDown={handleKeyDown}
       >
-        <span>{selectedType}</span>
+        <span>{contactTypes[selectedType].label}</span>
         <span
           className={`text-[var(--inat-muted)] transition ${isOpen ? "rotate-180" : ""}`}
           aria-hidden="true"
@@ -79,11 +77,11 @@ export function ContactTypeSelect() {
           aria-labelledby="contactTypeLabel"
           className="absolute left-0 right-0 top-[calc(100%+0.4rem)] z-20 overflow-hidden rounded-lg bg-white py-1 shadow-[0_18px_45px_-26px_rgba(32,52,54,0.75)] ring-1 ring-[rgba(32,52,54,0.12)]"
         >
-          {contactTypes.map((type) => {
-            const isSelected = type === selectedType;
+          {contactTypes.map((type, index) => {
+            const isSelected = index === selectedType;
 
             return (
-              <li key={type} role="option" aria-selected={isSelected}>
+              <li key={type.value} role="option" aria-selected={isSelected}>
                 <button
                   type="button"
                   className={`w-full px-4 py-3 text-left text-sm font-semibold transition ${
@@ -92,11 +90,11 @@ export function ContactTypeSelect() {
                       : "text-[var(--inat-primary)] hover:bg-[rgba(209,107,54,0.12)] hover:text-[var(--inat-primary)]"
                   }`}
                   onClick={() => {
-                    setSelectedType(type);
+                    setSelectedType(index);
                     setIsOpen(false);
                   }}
                 >
-                  {type}
+                  {type.label}
                 </button>
               </li>
             );

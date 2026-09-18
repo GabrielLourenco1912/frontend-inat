@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/design-system/Icon";
-import { can, type Actor, type Capability } from "@/domain/auth";
+import { can, hasRole, type Actor, type Capability } from "@/domain/auth";
 
 type NavItem = {
   label: string;
@@ -64,6 +64,7 @@ const navigation: NavGroup[] = [
     label: "Gestão do sistema",
     items: [
       { label: "Usuários", href: "/sistema/administracao/usuarios", icon: "person", capability: "administration:read" },
+      { label: "Mensagens de contato", href: "/sistema/administracao/mensagens", icon: "mail", capability: "administration:read", adminOnly: true },
       { label: "Papéis e acessos", href: "/sistema/administracao/papeis", icon: "shield", capability: "administration:manage", adminOnly: true },
       { label: "Tipos de documento", href: "/sistema/administracao/tipos-de-documento", icon: "folder", capability: "administration:read" },
     ],
@@ -86,6 +87,7 @@ const pathLabels: Record<string, string> = {
   "minha-conta": "Minha conta",
   administracao: "Administração",
   usuarios: "Usuários",
+  mensagens: "Mensagens de contato",
   papeis: "Papéis",
   "tipos-de-documento": "Tipos de documento",
   "sem-acesso": "Acesso restrito",
@@ -147,7 +149,9 @@ export function PortalShell({
         .map((group) => ({
           ...group,
           items: group.items.filter(
-            (item) => !item.capability || can(actor, item.capability),
+            (item) =>
+              (!item.adminOnly || hasRole(actor, "ADMIN"))
+              && (!item.capability || can(actor, item.capability)),
           ),
         }))
         .filter((group) => group.items.length > 0),

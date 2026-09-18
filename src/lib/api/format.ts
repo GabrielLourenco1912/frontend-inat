@@ -111,6 +111,13 @@ const labels: Record<string, string> = {
   INVITED: "Convidado",
   LOCKED: "Bloqueado",
   DISABLED: "Desativado",
+  NEW: "Nova",
+  READ: "Lida",
+  ARCHIVED: "Arquivada",
+  YOUTH_INTERESTED: "Jovem interessado",
+  COMPANY: "Empresa",
+  FAMILY_OR_GUARDIAN: "Família/responsável",
+  OTHER: "Outro",
 };
 
 export function apiLabel(value?: string | null) {

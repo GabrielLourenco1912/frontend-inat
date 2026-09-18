@@ -7,9 +7,13 @@ export async function serverListPage<T>(path: string, query: ListQuery = {}, key
   let pathname = originalPath;
   const params = new URLSearchParams(search);
   const q = queryValue(query.q)?.trim();
-  if (q && /^\/api\/(people|learners|organizations|contracts|cohorts|lessons|activities|notifications|users|roles|document-types)$/.test(pathname)) {
-    pathname = pathname.replace("/api/", "/api/search/");
-    params.set("q", q);
+  if (q) {
+    if (pathname === "/api/contact-messages") {
+      params.set("search", q);
+    } else if (/^\/api\/(people|learners|organizations|contracts|cohorts|lessons|activities|notifications|users|roles|document-types)$/.test(pathname)) {
+      pathname = pathname.replace("/api/", "/api/search/");
+      params.set("q", q);
+    }
   }
   params.set("page", String(pageIndex(query[key])));
   params.set("size", String(PAGE_SIZE));
