@@ -32,6 +32,9 @@ export function Header() {
               {item.label}
             </a>
           ))}
+          <a href="/documentacao" className="px-3 py-2 text-[0.8125rem] font-semibold text-[var(--inat-muted)] transition hover:bg-[var(--inat-mist)] hover:text-[var(--inat-ink)]">
+            Documentação
+          </a>
         </nav>
 
         <a href={INTERNAL_SYSTEM_NAV_URL} className="btn-base btn-cta ml-auto hidden gap-2 sm:inline-flex xl:ml-3">
@@ -60,6 +63,10 @@ export function Header() {
                 <Icon name="arrow-right" className="size-4 text-[var(--inat-muted)]" />
               </a>
             ))}
+            <a href="/documentacao" onClick={() => setIsOpen(false)} className="flex min-h-11 items-center justify-between border-b border-[var(--inat-line)] px-2 text-sm font-semibold text-[var(--inat-ink)]">
+              Documentação
+              <Icon name="arrow-right" className="size-4 text-[var(--inat-muted)]" />
+            </a>
             <a href={INTERNAL_SYSTEM_NAV_URL} onClick={() => setIsOpen(false)} className="btn-base btn-cta mt-3 gap-2 sm:hidden">
               Acessar portal
               <Icon name="arrow-right" className="size-4" />
