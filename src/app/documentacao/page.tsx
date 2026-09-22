@@ -747,7 +747,7 @@ export default function DocumentationPage() {
               <SectionHeading
                 eyebrow="08 · Referência da API"
                 title={`${endpointCount} operações, pesquisáveis por contexto`}
-                description="Pesquise por rota, ação, DTO ou regra; filtre por domínio e nível de acesso. Cada item mostra o contrato principal de entrada, saída, parâmetros e observações relevantes."
+                description="Pesquise por rota, ação, DTO ou regra; filtre por domínio e nível de acesso. Cada item mostra parâmetros, cabeçalhos, payload esperado, resposta e um exemplo completo com curl."
               />
               <EndpointExplorer />
             </section>
