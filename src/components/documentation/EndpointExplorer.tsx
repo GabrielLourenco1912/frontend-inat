@@ -10,8 +10,26 @@ import {
   type ApiEndpoint,
   type HttpMethod,
 } from "@/lib/documentation/backend-catalog";
+import {
+  requestContracts,
+  type ApiRequestContract,
+} from "@/lib/documentation/request-contracts";
 
 type AccessFilter = "all" | AccessLevel;
+
+type RequestHeader = {
+  name: string;
+  value: string;
+  required: boolean;
+  description: string;
+  curlValue?: string;
+};
+
+type PathParameter = {
+  name: string;
+  type: string;
+  description: string;
+};
 
 const accessFilters: Array<{ value: AccessFilter; label: string }> = [
   { value: "all", label: "Todos" },
@@ -36,6 +54,181 @@ const accessStyles: Record<AccessLevel, string> = {
   contextual: "border-teal-200 bg-teal-50 text-teal-700",
 };
 
+const clientAwareAuthPaths = new Set([
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/forgot-password",
+  "/api/auth/challenge/verify",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+]);
+
+const pathParameterDescriptions: Record<string, string> = {
+  activityId: "ULID da atividade",
+  contextId: "ULID do recurso usado como contexto",
+  contextType: "Tipo do contexto, por exemplo LESSON",
+  contractId: "ULID do contrato",
+  fileId: "ULID do arquivo",
+  guardianPersonId: "ULID da pessoa responsável",
+  learnerId: "ULID do aprendiz",
+  lessonId: "ULID da aula",
+  organizationId: "ULID da organização",
+  resource: "Recurso de busca aceito pelo catálogo do backend",
+  roleId: "Identificador short do papel",
+  submissionId: "ULID da entrega",
+  userId: "ULID do usuário",
+};
+
+function requestContract(endpoint: ApiEndpoint): ApiRequestContract | undefined {
+  return endpoint.request ? requestContracts[endpoint.request] : undefined;
+}
+
+function requestHeaders(endpoint: ApiEndpoint): RequestHeader[] {
+  const binaryResponse = endpoint.response.startsWith("Resource");
+  const headers: RequestHeader[] = [
+    {
+      name: "Accept",
+      value: binaryResponse ? "application/octet-stream" : "application/json",
+      required: false,
+      description: binaryResponse
+        ? "O tipo real do arquivo também pode ser negociado."
+        : "Formato padrão das respostas da API.",
+    },
+  ];
+
+  if (endpoint.access !== "public") {
+    headers.push({
+      name: "Authorization",
+      value: "Bearer <access_token>",
+      required: true,
+      description: "JWT de acesso emitido após a verificação do desafio.",
+    });
+  }
+
+  if (endpoint.contentType === "application/json") {
+    headers.push({
+      name: "Content-Type",
+      value: "application/json",
+      required: true,
+      description: "O corpo deve ser enviado como JSON UTF-8.",
+    });
+  }
+
+  if (endpoint.contentType === "multipart/form-data") {
+    headers.push({
+      name: "Content-Type",
+      value: "multipart/form-data; boundary=<automático>",
+      required: true,
+      description: "Deixe o cliente HTTP gerar o boundary; no curl, use --form.",
+    });
+  }
+
+  if (clientAwareAuthPaths.has(endpoint.path)) {
+    headers.push({
+      name: "X-Client-Type",
+      value: "web | mobile",
+      curlValue: "web",
+      required: false,
+      description: "Padrão: web. Define se o refresh token usa cookie ou corpo.",
+    });
+  }
+
+  if (endpoint.path === "/api/auth/refresh" || endpoint.path === "/api/auth/logout") {
+    headers.push({
+      name: "Cookie",
+      value: "refresh_token=<refresh_token>",
+      required: false,
+      description: "Alternativa usada pelo cliente web ao refreshToken no corpo.",
+    });
+  }
+
+  return headers;
+}
+
+function pathParameters(path: string): PathParameter[] {
+  return [...path.matchAll(/\{([^}]+)\}/g)].map((match) => {
+    const [rawName, rawType] = match[1].split(":").map((part) => part.trim());
+    const isShort = rawType === "short" || rawName === "roleId";
+
+    return {
+      name: rawName,
+      type: isShort ? "short" : rawName === "resource" || rawName === "contextType" ? "string" : "ULID",
+      description:
+        pathParameterDescriptions[rawName] ??
+        (isShort ? "Identificador numérico do catálogo" : "ULID do recurso"),
+    };
+  });
+}
+
+function examplePath(path: string) {
+  return path.replace(/\{([^}]+)\}/g, (_, token: string) => {
+    const [name, rawType] = token.split(":").map((part) => part.trim());
+    if (rawType === "short" || name === "roleId") return "1";
+    if (name === "resource") return "people";
+    if (name === "contextType") return "LESSON";
+    return "01K5X3M8Y7ABCD1234EFGH5678";
+  });
+}
+
+function exampleQuery(endpoint: ApiEndpoint) {
+  const parameters = endpoint.parameters?.join(" ").toLowerCase() ?? "";
+  if (!parameters) return "";
+
+  const query: string[] = [];
+  if (parameters.includes("q —")) query.push("q=maria");
+  if (parameters.includes("startdate")) query.push("startDate=2026-09-01", "endDate=2026-09-30");
+  if (parameters.includes("learnerid")) query.push("learnerId=01K5X3M8Y7ABCD1234EFGH5680");
+  if (parameters.includes("organizationid")) query.push("organizationId=01K5X3M8Y7ABCD1234EFGH5681");
+  if (parameters.includes("activecontractsonly")) query.push("activeContractsOnly=true");
+  if (parameters.includes("personid")) query.push("personId=01K5X3M8Y7ABCD1234EFGH5678");
+  if (parameters.includes("persontype")) query.push("personType=LEARNER");
+  if (parameters.includes("verificationstatus")) query.push("verificationStatus=VERIFIED");
+  if (parameters.includes("channel")) query.push("channel=IN_APP");
+  if (parameters.includes("search,")) query.push("search=maria", "status=NEW", "contactType=YOUTH_INTERESTED");
+  if (parameters.includes("purpose")) query.push("purpose=selector");
+  if (parameters.includes("contextid")) query.push("contextId=01K5X3M8Y7ABCD1234EFGH5678");
+  if (parameters.includes("page")) query.push("page=0");
+  if (parameters.includes("size")) query.push(`size=${endpoint.path.startsWith("/api/lookups/") ? 5 : 20}`);
+
+  return query.length ? `?${query.join("&")}` : "";
+}
+
+function shellSingleQuoted(value: string) {
+  return value.replaceAll("'", "'\\''");
+}
+
+function curlExample(endpoint: ApiEndpoint, contract: ApiRequestContract | undefined) {
+  const lines = [
+    `curl --request ${endpoint.method}`,
+    `  --url 'http://localhost:8080${examplePath(endpoint.path)}${exampleQuery(endpoint)}'`,
+  ];
+
+  requestHeaders(endpoint)
+    .filter((header) => header.name !== "Cookie")
+    .filter(
+      (header) =>
+        !(endpoint.contentType === "multipart/form-data" && header.name === "Content-Type"),
+    )
+    .forEach((header) => {
+      lines.push(`  --header '${header.name}: ${header.curlValue ?? header.value}'`);
+    });
+
+  if (contract?.parts?.length) {
+    for (const part of contract.parts) {
+      if (part.name === "metadata" && contract.example) {
+        const metadata = shellSingleQuoted(JSON.stringify(contract.example));
+        lines.push(`  --form 'metadata=${metadata};type=application/json'`);
+      } else if (part.fileExample) {
+        lines.push(`  --form '${part.name}=@${part.fileExample}'`);
+      }
+    }
+  } else if (contract?.example) {
+    lines.push(`  --data '${shellSingleQuoted(JSON.stringify(contract.example, null, 2))}'`);
+  }
+
+  return lines.map((line, index) => (index < lines.length - 1 ? `${line} \\` : line)).join("\n");
+}
+
 function normalize(value: string) {
   return value
     .normalize("NFD")
@@ -45,6 +238,7 @@ function normalize(value: string) {
 
 function matchesSearch(endpoint: ApiEndpoint, groupName: string, query: string) {
   if (!query) return true;
+  const contract = requestContract(endpoint);
   const searchable = [
     endpoint.method,
     endpoint.path,
@@ -55,6 +249,9 @@ function matchesSearch(endpoint: ApiEndpoint, groupName: string, query: string) 
     groupName,
     accessLabels[endpoint.access],
     ...(endpoint.parameters ?? []),
+    ...(contract?.rules ?? []),
+    contract?.example ? JSON.stringify(contract.example) : undefined,
+    ...(contract?.parts?.map((part) => `${part.name} ${part.contentType} ${part.description}`) ?? []),
   ]
     .filter(Boolean)
     .join(" ");
@@ -63,6 +260,10 @@ function matchesSearch(endpoint: ApiEndpoint, groupName: string, query: string) 
 }
 
 function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
+  const contract = requestContract(endpoint);
+  const headers = requestHeaders(endpoint);
+  const routeParameters = pathParameters(endpoint.path);
+
   return (
     <details className="group border-b border-[var(--inat-line)] bg-white last:border-b-0 open:bg-[#fbfdfc]">
       <summary className="grid cursor-pointer list-none gap-3 px-4 py-4 transition hover:bg-[var(--inat-mist)]/55 sm:grid-cols-[5rem_minmax(0,1fr)_auto_auto] sm:items-center sm:px-5 [&::-webkit-details-marker]:hidden">
@@ -115,10 +316,36 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
               </div>
             ) : null}
 
+            {routeParameters.length ? (
+              <div className="mt-5">
+                <h4 className="font-mono text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[var(--inat-muted)]">
+                  Parâmetros de rota
+                </h4>
+                <ul className="mt-2 grid gap-2">
+                  {routeParameters.map((parameter) => (
+                    <li
+                      key={parameter.name}
+                      className="flex gap-2 text-xs leading-5 text-[var(--inat-muted)]"
+                    >
+                      <span className="mt-[0.45rem] size-1 shrink-0 rounded-full bg-[var(--inat-teal)]" />
+                      <span>
+                        <code className="font-mono font-semibold text-[var(--inat-ink)]">
+                          {parameter.name}
+                        </code>{" "}
+                        <span className="text-[var(--inat-muted)]">
+                          ({parameter.type}) — {parameter.description}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             {endpoint.parameters?.length ? (
               <div className="mt-5">
                 <h4 className="font-mono text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[var(--inat-muted)]">
-                  Parâmetros
+                  Query parameters
                 </h4>
                 <ul className="mt-2 grid gap-2">
                   {endpoint.parameters.map((parameter) => (
@@ -161,6 +388,139 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
               </dd>
             </div>
           </dl>
+        </div>
+
+        <div className="mt-6 border-t border-[var(--inat-line)] pt-5">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h4 className="text-sm font-bold text-[var(--inat-ink)]">Como consumir</h4>
+              <p className="mt-1 text-xs leading-5 text-[var(--inat-muted)]">
+                Cabeçalhos, corpo e exemplo executável para o ambiente local.
+              </p>
+            </div>
+            <code className="rounded bg-[var(--inat-paper)] px-2 py-1 font-mono text-[0.6875rem] text-[var(--inat-muted)]">
+              http://localhost:8080
+            </code>
+          </div>
+
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <section className="min-w-0 overflow-hidden rounded-md border border-[var(--inat-line)] bg-white">
+              <div className="border-b border-[var(--inat-line)] bg-[var(--inat-paper)] px-4 py-3">
+                <h5 className="font-mono text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[var(--inat-muted)]">
+                  Cabeçalhos da requisição
+                </h5>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[34rem] border-collapse text-left text-xs">
+                  <thead className="text-[var(--inat-muted)]">
+                    <tr className="border-b border-[var(--inat-line)]">
+                      <th className="px-4 py-2.5 font-semibold">Nome</th>
+                      <th className="px-4 py-2.5 font-semibold">Valor</th>
+                      <th className="px-4 py-2.5 font-semibold">Uso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {headers.map((header) => (
+                      <tr
+                        key={header.name}
+                        className="border-b border-[var(--inat-line)] last:border-b-0"
+                      >
+                        <td className="px-4 py-3 align-top">
+                          <code className="font-mono font-semibold text-[var(--inat-ink)]">
+                            {header.name}
+                          </code>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <code className="break-all font-mono text-[var(--inat-ink)]">
+                            {header.value}
+                          </code>
+                        </td>
+                        <td className="px-4 py-3 align-top leading-5 text-[var(--inat-muted)]">
+                          <span
+                            className={`mr-1.5 inline-flex rounded-full px-1.5 py-0.5 font-mono text-[0.5625rem] font-bold uppercase tracking-[0.06em] ${
+                              header.required
+                                ? "bg-[#fff0e8] text-[#9a4b25]"
+                                : "bg-[var(--inat-mist)] text-[var(--inat-teal-dark)]"
+                            }`}
+                          >
+                            {header.required ? "obrigatório" : "opcional"}
+                          </span>
+                          {header.description}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="min-w-0 overflow-hidden rounded-md border border-[var(--inat-line)] bg-white">
+              <div className="border-b border-[var(--inat-line)] bg-[var(--inat-paper)] px-4 py-3">
+                <h5 className="font-mono text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-[var(--inat-muted)]">
+                  Payload esperado
+                </h5>
+              </div>
+
+              {contract?.example ? (
+                <pre className="max-h-96 overflow-auto bg-[#16282a] p-4 font-mono text-xs leading-6 text-[#dceae7]">
+                  <code>{JSON.stringify(contract.example, null, 2)}</code>
+                </pre>
+              ) : (
+                <div className="px-4 py-5 text-sm leading-6 text-[var(--inat-muted)]">
+                  {contract?.parts?.length
+                    ? "Esta operação recebe apenas partes de arquivo no formulário multipart."
+                    : "Esta operação não recebe corpo de requisição."}
+                </div>
+              )}
+
+              {contract?.parts?.length ? (
+                <div className="border-t border-[var(--inat-line)] px-4 py-4">
+                  <h6 className="text-xs font-bold text-[var(--inat-ink)]">Partes multipart</h6>
+                  <ul className="mt-2 grid gap-2">
+                    {contract.parts.map((part) => (
+                      <li key={part.name} className="text-xs leading-5 text-[var(--inat-muted)]">
+                        <code className="font-mono font-semibold text-[var(--inat-ink)]">
+                          {part.name}
+                        </code>{" "}
+                        <span className="font-mono text-[0.625rem]">({part.contentType})</span>
+                        {part.required ? " — obrigatório. " : " — opcional. "}
+                        {part.description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {contract?.rules.length ? (
+                <div className="border-t border-[var(--inat-line)] px-4 py-4">
+                  <h6 className="text-xs font-bold text-[var(--inat-ink)]">Campos e validações</h6>
+                  <ul className="mt-2 grid gap-2">
+                    {contract.rules.map((rule) => (
+                      <li
+                        key={rule}
+                        className="flex gap-2 text-xs leading-5 text-[var(--inat-muted)]"
+                      >
+                        <span className="mt-[0.45rem] size-1 shrink-0 rounded-full bg-[var(--inat-clay)]" />
+                        {rule}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="min-w-0 overflow-hidden rounded-md border border-white/10 bg-[#16282a] xl:col-span-2">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                <h5 className="font-mono text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-white/48">
+                  Exemplo com curl
+                </h5>
+                <span className="font-mono text-[0.625rem] text-white/38">bash</span>
+              </div>
+              <pre className="overflow-x-auto p-4 font-mono text-xs leading-6 text-[#dceae7]">
+                <code>{curlExample(endpoint, contract)}</code>
+              </pre>
+            </section>
+          </div>
         </div>
       </div>
     </details>
