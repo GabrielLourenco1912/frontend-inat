@@ -14,9 +14,10 @@ export function Location() {
             <p className="section-copy mt-6 text-lg leading-8">
               {INSTITUTION_ADDRESS}
             </p>
-            {/* TODO: Replace # with a validated Google Maps URL. */}
             <a
               href={GOOGLE_MAPS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-base btn-primary mt-8"
             >
               Ver no mapa

@@ -1,5 +1,7 @@
 import { Icon } from "@/components/design-system/Icon";
 
+import { CONTACT_INFO } from "@/lib/constants";
+
 const partnership = [
   ["Formação", "Percursos formativos conectados às competências do trabalho."],
   ["Acompanhamento", "Canal próximo entre empresa, jovem e equipe pedagógica."],
@@ -23,7 +25,7 @@ export function ForCompanies() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a href="#contato" className="btn-base btn-primary gap-2">Quero ser parceira<Icon name="arrow-right" className="size-4" /></a>
-            <a href="#contato" className="btn-base btn-secondary">Conversar com a equipe</a>
+            <a href={CONTACT_INFO.whatsappHref} className="btn-base btn-secondary">Conversar com a equipe</a>
           </div>
         </div>
 

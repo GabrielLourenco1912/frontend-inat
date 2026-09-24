@@ -188,7 +188,17 @@ export function Contact() {
                 Telefone/WhatsApp
               </dt>
               <dd className="mt-2 text-base text-white/80">
-                {CONTACT_INFO.phone}
+                <a href={CONTACT_INFO.phoneHref} className="hover:text-white hover:underline">
+                  {CONTACT_INFO.phone}
+                </a>
+                <a
+                  href={CONTACT_INFO.whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block text-sm font-semibold text-white hover:underline"
+                >
+                  Conversar no WhatsApp
+                </a>
               </dd>
             </div>
             <div>
@@ -196,7 +206,9 @@ export function Contact() {
                 E-mail
               </dt>
               <dd className="mt-2 text-base text-white/80">
-                {CONTACT_INFO.email}
+                <a href={`mailto:${CONTACT_INFO.email}`} className="break-all hover:text-white hover:underline">
+                  {CONTACT_INFO.email}
+                </a>
               </dd>
             </div>
             <div>
