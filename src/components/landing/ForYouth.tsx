@@ -1,4 +1,5 @@
 import { Icon } from "@/components/design-system/Icon";
+import { PUBLIC_DOCUMENTS } from "@/lib/constants";
 
 const steps = [
   "Conheça as possibilidades da aprendizagem profissional",
@@ -22,10 +23,21 @@ export function ForYouth() {
             O INAT ajuda a transformar dúvidas em preparação, e preparação em
             oportunidades reais — respeitando o tempo e a história de cada jovem.
           </p>
-          <a href="#contato" className="btn-base mt-9 gap-2 bg-white text-[var(--inat-teal-dark)] hover:bg-[var(--inat-paper)]">
-            Quero conhecer o programa
-            <Icon name="arrow-right" className="size-4" />
-          </a>
+          <div className="mt-9 flex flex-wrap items-center gap-5">
+            <a href="#contato" className="btn-base gap-2 bg-white text-[var(--inat-teal-dark)] hover:bg-[var(--inat-paper)]">
+              Quero conhecer o programa
+              <Icon name="arrow-right" className="size-4" />
+            </a>
+            <a
+              href={PUBLIC_DOCUMENTS.apprenticeManual}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-white underline-offset-4 hover:underline"
+            >
+              Manual da Aprendizagem Profissional (PDF)
+              <Icon name="external" className="size-4" />
+            </a>
+          </div>
         </div>
 
         <div className="scroll-reveal flex flex-col justify-center border-y border-[var(--inat-line)] py-2" data-reveal="right">

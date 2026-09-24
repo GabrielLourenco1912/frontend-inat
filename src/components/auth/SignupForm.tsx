@@ -6,8 +6,9 @@ import { AuthChallengeForm } from "@/components/auth/AuthChallengeForm";
 import { Icon } from "@/components/design-system/Icon";
 import { authErrorMessage, postJson } from "@/lib/api/client";
 import type { AuthChallengeResponse } from "@/lib/api/contracts";
+import { PUBLIC_DOCUMENTS } from "@/lib/constants";
 
-export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) {
+export function SignupForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [challenge, setChallenge] = useState<AuthChallengeResponse | null>(null);
@@ -33,10 +34,6 @@ export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) 
     }
     if (password !== confirmation) {
       setError("A confirmação não corresponde à senha informada.");
-      return;
-    }
-    if (!regulationUrl) {
-      setError("O regulamento oficial ainda não está disponível para leitura.");
       return;
     }
     if (!regulationAcceptedAt) {
@@ -107,23 +104,17 @@ export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) 
           <div className="flex items-start gap-3">
             <Icon name="document" className="mt-0.5 size-5 shrink-0 text-[var(--inat-teal-dark)]" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--inat-ink)]">Regulamento de acesso</p>
+              <p className="text-sm font-semibold text-[var(--inat-ink)]">Regulamento Interno dos Aprendizes</p>
               <p className="mt-1 text-xs leading-5 text-[var(--inat-muted)]">
                 O aceite registra a data e a hora em que você concordou com o documento oficial.
               </p>
-              {regulationUrl ? (
-                <button
-                  type="button"
-                  onClick={() => setRegulationOpen(true)}
-                  className="mt-3 text-xs font-semibold text-[var(--inat-teal-dark)] hover:underline"
-                >
-                  Ler o regulamento completo
-                </button>
-              ) : (
-                <p className="mt-3 text-xs font-semibold text-amber-800" role="status">
-                  Documento ainda não configurado. O cadastro permanece indisponível.
-                </p>
-              )}
+              <button
+                type="button"
+                onClick={() => setRegulationOpen(true)}
+                className="mt-3 text-xs font-semibold text-[var(--inat-teal-dark)] hover:underline"
+              >
+                Ler o regulamento completo
+              </button>
             </div>
           </div>
         </div>
@@ -131,16 +122,15 @@ export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) 
           <input
             type="checkbox"
             checked={Boolean(regulationAcceptedAt)}
-            disabled={!regulationUrl}
             onChange={(event) =>
               setRegulationAcceptedAt(event.target.checked ? new Date().toISOString() : null)
             }
             required
-            className="mt-0.5 size-4 accent-[var(--inat-teal)] disabled:cursor-not-allowed"
+            className="mt-0.5 size-4 accent-[var(--inat-teal)]"
           />
-          Li e aceito o regulamento do Portal INAT.
+          Li e aceito o Regulamento Interno dos Aprendizes.
         </label>
-        <button type="submit" disabled={submitting || !regulationUrl || !regulationAcceptedAt} className="portal-button portal-button-clay h-12 w-full disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="submit" disabled={submitting || !regulationAcceptedAt} className="portal-button portal-button-clay h-12 w-full disabled:cursor-not-allowed disabled:opacity-60">
           {submitting ? "Criando conta..." : "Criar conta"}
           <Icon name="arrow-right" className="size-4" />
         </button>
@@ -153,7 +143,7 @@ export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) 
         </Link>
       </div>
 
-      {regulationOpen && regulationUrl ? (
+      {regulationOpen ? (
         <div
           className="fixed inset-0 z-[100] grid place-items-center bg-[var(--inat-ink)]/70 p-4"
           role="dialog"
@@ -167,7 +157,7 @@ export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) 
             <div className="flex items-center justify-between gap-4 border-b border-[var(--inat-line)] px-4 py-3 sm:px-5">
               <div>
                 <p className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.12em] text-[var(--inat-teal-dark)]">Documento oficial</p>
-                <h2 id="regulation-title" className="mt-1 text-base font-semibold">Regulamento do Portal INAT</h2>
+                <h2 id="regulation-title" className="mt-1 text-base font-semibold">Regulamento Interno dos Aprendizes</h2>
               </div>
               <button
                 type="button"
@@ -179,16 +169,16 @@ export function SignupForm({ regulationUrl }: { regulationUrl: string | null }) 
               </button>
             </div>
             <iframe
-              src={regulationUrl}
-              title="Regulamento oficial do Portal INAT"
+              src={PUBLIC_DOCUMENTS.regulation}
+              title="Regulamento Interno dos Aprendizes"
               className="min-h-0 flex-1 border-0"
               referrerPolicy="no-referrer"
             />
             <div className="flex flex-col gap-3 border-t border-[var(--inat-line)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <a
-                href={regulationUrl}
+                href={PUBLIC_DOCUMENTS.regulation}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-xs font-semibold text-[var(--inat-teal-dark)] hover:underline"
               >
                 Abrir documento em outra guia
