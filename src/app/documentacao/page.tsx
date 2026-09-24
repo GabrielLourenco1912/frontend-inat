@@ -195,7 +195,7 @@ const schedulers = [
 ];
 
 const responseExample = `{
-  "timestamp": "2026-09-20T14:30:00",
+  "timestamp": "2026-09-20T17:30:00Z",
   "status": "OK",
   "message": "Resource found",
   "data": { ... }

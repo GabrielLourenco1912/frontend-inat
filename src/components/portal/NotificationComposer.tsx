@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { postJson, requestErrorMessage } from "@/lib/api/client";
+import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 import type {
   Notification,
   NotificationAudienceType,
@@ -73,8 +74,8 @@ export function NotificationComposer() {
         contextId: contextId || null,
         payload: payload || null,
         priority: String(form.get("priority") ?? "NORMAL") as NotificationPriority,
-        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+        scheduledAt: scheduledAt ? parseSaoPauloDateTimeInput(scheduledAt).toISOString() : null,
+        expiresAt: expiresAt ? parseSaoPauloDateTimeInput(expiresAt).toISOString() : null,
         audience: { type: audience, targetId: audience === "ALL" ? null : targetId },
         channels,
       });

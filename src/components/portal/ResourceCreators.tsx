@@ -9,6 +9,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { PersonTypeFields } from "@/components/portal/PersonTypeFields";
 import { deleteResource, postJson, putJson, requestErrorMessage } from "@/lib/api/client";
+import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 import type {
   LessonStatus,
   OrganizationType,
@@ -196,8 +197,8 @@ export function LessonCreator() {
             cohortId: String(form.get("cohortId")),
             instructorPersonId: String(form.get("instructorPersonId")),
             title: String(form.get("title") ?? "").trim(),
-            startsAt: new Date(String(form.get("startsAt"))).toISOString(),
-            endsAt: new Date(String(form.get("endsAt"))).toISOString(),
+            startsAt: parseSaoPauloDateTimeInput(String(form.get("startsAt"))).toISOString(),
+            endsAt: parseSaoPauloDateTimeInput(String(form.get("endsAt"))).toISOString(),
             deliveryMode: String(form.get("deliveryMode")),
             room: String(form.get("room") ?? "").trim() || null,
             meetingUrl: String(form.get("meetingUrl") ?? "").trim() || null,

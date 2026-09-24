@@ -1,4 +1,5 @@
 import type { AttendanceRecord, AttendanceStatus, LessonParticipant } from "@/lib/api/domain-contracts";
+import { parseSaoPauloDateTimeInput, saoPauloDateTimeInputValue } from "@/lib/api/time-zone";
 
 export type AttendanceFields = {
   status: AttendanceStatus | "";
@@ -16,10 +17,7 @@ export type AttendanceDraft = AttendanceFields & {
 };
 
 export function localInputValue(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
+  return saoPauloDateTimeInputValue(value);
 }
 
 function fields(record?: AttendanceRecord): AttendanceFields {
@@ -63,15 +61,15 @@ export function acknowledgeAttendance(row: AttendanceDraft, record: AttendanceRe
 export function attendanceValidation(row: AttendanceDraft) {
   if (!row.status) return "Selecione a situação da presença.";
   if (["PRESENT", "LATE", "PARTIAL"].includes(row.status) && !row.checkInAt) return "Informe o horário de entrada.";
-  if ([row.checkInAt, row.checkOutAt].some((value) => value && Number.isNaN(new Date(value).getTime()))) return "Revise os horários informados.";
-  if (row.checkInAt && row.checkOutAt && new Date(row.checkOutAt) < new Date(row.checkInAt)) return "A saída não pode anteceder a entrada.";
+  if ([row.checkInAt, row.checkOutAt].some((value) => value && Number.isNaN(parseSaoPauloDateTimeInput(value).getTime()))) return "Revise os horários informados.";
+  if (row.checkInAt && row.checkOutAt && parseSaoPauloDateTimeInput(row.checkOutAt) < parseSaoPauloDateTimeInput(row.checkInAt)) return "A saída não pode anteceder a entrada.";
   return undefined;
 }
 
 export function attendanceBody(row: AttendanceDraft) {
   return { lessonParticipantId: row.participant.id, status: row.status,
-    checkInAt: row.checkInAt ? new Date(row.checkInAt).toISOString() : null,
-    checkOutAt: row.checkOutAt ? new Date(row.checkOutAt).toISOString() : null,
+    checkInAt: row.checkInAt ? parseSaoPauloDateTimeInput(row.checkInAt).toISOString() : null,
+    checkOutAt: row.checkOutAt ? parseSaoPauloDateTimeInput(row.checkOutAt).toISOString() : null,
     notes: row.notes.trim() || null };
 }
 

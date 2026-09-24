@@ -36,6 +36,7 @@ import type {
   ParticipationType,
 } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime, formatTime } from "@/lib/api/format";
+import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 
 import { acknowledgeAttendance, attendanceBody, attendanceChanged, localInputValue, reconcileAttendance, saveAttendanceBatch, type AttendanceDraft } from "@/lib/attendance/drafts";
 
@@ -509,8 +510,8 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const startsAt = new Date(String(form.get("startsAt")));
-    const endsAt = new Date(String(form.get("endsAt")));
+    const startsAt = parseSaoPauloDateTimeInput(String(form.get("startsAt")));
+    const endsAt = parseSaoPauloDateTimeInput(String(form.get("endsAt")));
     const room = String(form.get("room") ?? "").trim();
     const meetingUrl = String(form.get("meetingUrl") ?? "").trim();
     const externalLessonUrl = String(form.get("externalLessonUrl") ?? "").trim();
