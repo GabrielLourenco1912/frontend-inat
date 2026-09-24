@@ -8,12 +8,12 @@ Variáveis do frontend:
 
 ```dotenv
 BACKEND_URL=http://localhost:8080
-REGULATION_URL=https://endereco-do-regulamento
 FRONTEND_AUTH_COOKIE_SECURE=false
 ```
 
 - `BACKEND_URL` é usado somente no servidor Next.js. No Compose, o padrão é `http://backend:8080`.
-- `REGULATION_URL` fornece o documento oficial exibido no cadastro. Sem ela, o cadastro fica bloqueado; o frontend não inventa texto jurídico.
+- O Regulamento Interno dos Aprendizes é servido diretamente de `public/documents/` e exibido no cadastro, sem configuração externa nem consulta ao backend.
+- O Manual da Aprendizagem Profissional também está em `public/documents/` e é acessível pela seção “Para jovens e famílias” da landing page.
 - `FRONTEND_AUTH_COOKIE_SECURE=false` é útil apenas em HTTP local. Em produção com HTTPS, usar `true` ou deixar a detecção automática.
 - Para o refresh cookie funcionar em HTTP local, o backend também precisa de `API_SECURITY_REFRESH_COOKIE_SECURE=false`.
 

@@ -12,11 +12,10 @@ export const metadata: Metadata = {
 export default async function SignupPage() {
   const actor = await getCurrentActor();
   if (actor) redirect("/sistema");
-  const regulationUrl = process.env.REGULATION_URL?.trim() || null;
 
   return (
     <AuthShell>
-      <SignupForm regulationUrl={regulationUrl} />
+      <SignupForm />
     </AuthShell>
   );
 }
