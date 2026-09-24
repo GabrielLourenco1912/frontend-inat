@@ -14,8 +14,7 @@ const configuredInternalSystemUrl =
 
 // A implantação pode sobrescrever o destino caso o portal use outro host.
 export const INTERNAL_SYSTEM_URL = configuredInternalSystemUrl || "/entrar";
-export const INTERNAL_SYSTEM_NAV_URL =
-  configuredInternalSystemUrl || "/entrar";
+export const INTERNAL_SYSTEM_NAV_URL = "/entrar";
 
 export const CONTACT_INFO = {
   phone: "+55 41 3425-8112",

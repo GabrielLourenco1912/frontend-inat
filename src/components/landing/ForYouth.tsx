@@ -13,8 +13,8 @@ export function ForYouth() {
     <section id="jovens" className="scroll-mt-24 bg-white py-20 sm:py-28">
       <div className="mx-auto grid w-full max-w-[90rem] gap-10 px-4 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch lg:px-8">
         <div className="scroll-reveal relative overflow-hidden bg-[var(--inat-teal)] p-7 text-white sm:p-10 lg:p-12" data-reveal="left">
-          <div className="absolute -bottom-32 -right-28 size-80 rounded-full border border-white/15" />
-          <div className="absolute -bottom-16 -right-12 size-52 rounded-full border border-white/20" />
+          <div className="absolute -bottom-32 -right-28 size-80 -z-10 rounded-full border border-white/15" />
+          <div className="absolute -bottom-16 -right-12 size-52 -z-10 rounded-full border border-white/20" />
           <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-white/65">Para jovens e famílias</p>
           <h2 className="mt-5 max-w-2xl text-balance text-4xl font-semibold leading-[1.06] tracking-[-0.04em] sm:text-5xl">
             Começar não precisa ser um passo solitário.
