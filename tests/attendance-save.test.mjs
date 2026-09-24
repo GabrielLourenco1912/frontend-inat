@@ -4,11 +4,20 @@ import { test } from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
+const timeZoneExports = {};
+const timeZoneSource = ts.transpileModule(readFileSync(new URL("../src/lib/api/time-zone.ts", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+vm.runInThisContext(`(function(exports) { ${timeZoneSource}\n})`)(timeZoneExports);
+
 const exports = {};
 const source = ts.transpileModule(readFileSync(new URL("../src/lib/attendance/drafts.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
-vm.runInThisContext(`(function(exports) { ${source}\n})`)(exports);
+vm.runInThisContext(`(function(exports, require) { ${source}\n})`)(exports, (specifier) => {
+  if (specifier === "@/lib/api/time-zone") return timeZoneExports;
+  throw new Error(`Unexpected import: ${specifier}`);
+});
 const { reconcileAttendance, acknowledgeAttendance, attendanceChanged, attendanceBody, saveAttendanceBatch } = exports;
 const participant = (id) => ({ id, learnerId: `learner-${id}`, lessonId: "lesson", status: "EXPECTED", participationType: "REGULAR" });
 const record = (id, overrides = {}) => ({ id: `record-${id}`, lessonParticipantId: id, lessonId: "lesson", learnerId: `learner-${id}`,

@@ -4,7 +4,10 @@ import { SocialIcon } from "@/components/landing/SocialIcon";
 import { INSTITUTION_NAME, INTERNAL_SYSTEM_NAV_URL, NAV_ITEMS, SOCIAL_LINKS } from "@/lib/constants";
 
 export function Footer() {
-  const year = new Date().getFullYear();
+  const year = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date());
   return (
     <footer className="bg-[var(--inat-ink)] text-white">
       <div className="mx-auto grid w-full max-w-[90rem] gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.25fr_.75fr_.75fr] lg:px-8">

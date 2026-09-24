@@ -31,6 +31,7 @@ import type {
   SubmissionStatus,
 } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime, formatFileSize } from "@/lib/api/format";
+import { parseSaoPauloDateTimeInput, saoPauloDateTimeInputValue } from "@/lib/api/time-zone";
 import {
   GENERAL_ATTACHMENT_ACCEPT,
   GENERAL_ATTACHMENT_EXTENSIONS,
@@ -245,8 +246,7 @@ function CorrectionDesk({ activity, submissions, files }: { activity: Activity; 
 }
 
 function localDateTime(value: string) {
-  const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  return saoPauloDateTimeInputValue(value);
 }
 
 function ActivityManager({ activity, lesson, files }: { activity: Activity; lesson: Lesson; files: ActivityFile[] }) {
@@ -259,8 +259,8 @@ function ActivityManager({ activity, lesson, files }: { activity: Activity; less
   async function update(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const availableAt = new Date(String(form.get("availableAt")));
-    const dueAt = new Date(String(form.get("dueAt")));
+    const availableAt = parseSaoPauloDateTimeInput(String(form.get("availableAt")));
+    const dueAt = parseSaoPauloDateTimeInput(String(form.get("dueAt")));
     if (
       Number.isNaN(availableAt.getTime()) ||
       Number.isNaN(dueAt.getTime()) ||

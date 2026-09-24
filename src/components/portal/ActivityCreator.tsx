@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { SearchSelect } from "@/components/design-system/SearchSelect";
 import { Icon } from "@/components/design-system/Icon";
 import { postJson, requestErrorMessage } from "@/lib/api/client";
+import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 import type { Activity, ActivityStatus, Lesson } from "@/lib/api/domain-contracts";
 
 export function ActivityCreator({ lesson }: { lesson?: Pick<Lesson, "id" | "title" | "status"> }) {
@@ -21,8 +22,8 @@ export function ActivityCreator({ lesson }: { lesson?: Pick<Lesson, "id" | "titl
     const dueAt = String(form.get("dueAt") ?? "");
     const maxScore = String(form.get("maxScore") ?? "");
     const lessonId = lesson?.id ?? String(form.get("lessonId") ?? "");
-    const availableDate = new Date(availableAt);
-    const dueDate = new Date(dueAt);
+    const availableDate = parseSaoPauloDateTimeInput(availableAt);
+    const dueDate = parseSaoPauloDateTimeInput(dueAt);
 
     if (!lessonId || lesson?.status === "CANCELLED") {
       setError("Selecione uma aula não cancelada.");
