@@ -5,6 +5,7 @@ import { SearchSelect } from "@/components/design-system/SearchSelect";
 import { ApprenticeshipWorkloadField } from "@/components/portal/ApprenticeshipWorkloadField";
 import { apprenticeshipWorkloadMinutes } from "@/lib/apprenticeship/policy";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { PersonTypeFields } from "@/components/portal/PersonTypeFields";
@@ -12,6 +13,7 @@ import { deleteResource, postJson, putJson, requestErrorMessage } from "@/lib/ap
 import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 import type {
   LessonStatus,
+  Learner,
   OrganizationType,
   Person,
   PersonTypeCode,
@@ -88,8 +90,9 @@ export function PersonCreator() {
   return <CreatorModal title="Cadastrar pessoa" trigger="Nova pessoa">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/people" successLabel="Cadastrar pessoa" build={(form) => personFrom(form)}><PersonFields /><PersonTypeFields /><AddressFields /></RequestForm>}</CreatorModal>;
 }
 
-export function PersonActions({ person }: { person: Person }) {
+export function PersonActions({ person, learner }: { person: Person; learner: Learner | null }) {
   const router = useRouter();
+  const hasLearnerType = person.personTypes.includes("LEARNER");
   async function remove() {
     if (!window.confirm(`Excluir o cadastro de ${person.fullName}?`)) return;
     try {
@@ -100,10 +103,32 @@ export function PersonActions({ person }: { person: Person }) {
       window.alert(requestErrorMessage(error, "Não foi possível excluir a pessoa."));
     }
   }
-  return <div className="flex flex-wrap gap-2"><CreatorModal title="Editar pessoa" trigger="Editar" icon="edit">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint={`/api/backend/people/${encodeURIComponent(person.id)}`} method="PUT" successLabel="Salvar alterações" build={(form) => personFrom(form)}><PersonFields person={person} /><PersonTypeFields types={person.personTypes} /><AddressFields address={person.address} /></RequestForm>}</CreatorModal><button type="button" onClick={remove} className="portal-button portal-button-quiet text-rose-700"><Icon name="trash" className="size-4" />Excluir</button></div>;
+  return <div className="flex flex-wrap items-center gap-2">
+    <CreatorModal title={`Cadastrar ${person.fullName} como aprendiz`} trigger="Cadastrar como aprendiz" disabled={!hasLearnerType || !!learner}>
+      {(close) => <RequestForm
+        close={close}
+        success={(result) => {
+          const created = result as { learner: Learner };
+          router.push(`/sistema/aprendizes/${encodeURIComponent(created.learner.id)}`);
+          router.refresh();
+        }}
+        endpoint={`/api/backend/people/${encodeURIComponent(person.id)}/learner`}
+        successLabel="Cadastrar aprendiz"
+        build={learnerFrom}
+      >
+        <p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">O cadastro da pessoa será aproveitado. Informe a matrícula e, se ela for menor de idade, um responsável legal.</p>
+        <LearnerProfileFields />
+        <LearnerGuardianFields />
+      </RequestForm>}
+    </CreatorModal>
+    {!hasLearnerType ? <span className="text-xs text-[var(--inat-muted)]">Adicione o tipo Aprendiz em Editar pessoa para habilitar.</span> : null}
+    {learner ? <Link href={`/sistema/aprendizes/${encodeURIComponent(learner.id)}`} className="portal-button portal-button-secondary">Ver perfil de aprendiz</Link> : null}
+    <CreatorModal title="Editar pessoa" trigger="Editar" icon="edit">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint={`/api/backend/people/${encodeURIComponent(person.id)}`} method="PUT" successLabel="Salvar alterações" build={(form) => personFrom(form)}><PersonFields person={person} /><PersonTypeFields types={person.personTypes} /><AddressFields address={person.address} /></RequestForm>}</CreatorModal>
+    <button type="button" onClick={remove} className="portal-button portal-button-quiet text-rose-700"><Icon name="trash" className="size-4" />Excluir</button>
+  </div>;
 }
 
-function RequestForm({ close, success, endpoint, successLabel, build, children, method = "POST" }: { close: () => void; success: () => void; endpoint: string; successLabel: string; build: (form: FormData) => unknown; children: ReactNode; method?: "POST" | "PUT" }) {
+function RequestForm({ close, success, endpoint, successLabel, build, children, method = "POST" }: { close: () => void; success: (result: unknown) => void; endpoint: string; successLabel: string; build: (form: FormData) => unknown; children: ReactNode; method?: "POST" | "PUT" }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -113,10 +138,11 @@ function RequestForm({ close, success, endpoint, successLabel, build, children, 
     setError("");
     try {
       const body = build(new FormData(formElement));
-      if (method === "PUT") await putJson<unknown>(endpoint, body);
-      else await postJson<unknown>(endpoint, body);
+      const result = method === "PUT"
+        ? await putJson<unknown>(endpoint, body)
+        : await postJson<unknown>(endpoint, body);
       close();
-      success();
+      success(result);
     } catch (requestError) {
       setError(requestErrorMessage(requestError, "Não foi possível salvar o cadastro."));
     } finally {
@@ -146,18 +172,55 @@ export function OrganizationCreator() {
 
 export function LearnerOnboardingCreator() {
   const router = useRouter();
-  return <CreatorModal title="Cadastrar aprendiz" trigger="Novo aprendiz">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/learner-onboardings" successLabel="Cadastrar aprendiz" build={(form) => {
-    const guardianPersonId = String(form.get("guardianPersonId") ?? "");
-    return {
-      person: personFrom(form),
-      learner: {
-        registrationNumber: String(form.get("registrationNumber") ?? "").trim(),
-        hasCompletedHighSchool: form.get("hasCompletedHighSchool") === "on",
-        status: String(form.get("status")) as RecordStatus,
-      },
-      guardians: guardianPersonId ? [{ guardianPersonId, relationshipType: String(form.get("relationshipType") ?? "").trim(), legalGuardian: form.get("legalGuardian") === "on", primaryContact: form.get("primaryContact") === "on" }] : [],
-    };
-  }}><div className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">Pessoa, endereço e perfil de aprendiz são enviados em uma única operação. A conta de acesso continua sendo criada apenas pelo cadastro público.</div><PersonFields /><PersonTypeFields requiredType="LEARNER" /><AddressFields /><fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Perfil de aprendiz</legend><label><span className="portal-label">Matrícula</span><input name="registrationNumber" maxLength={30} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="SUSPENDED">Suspenso</option></select></label><label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="hasCompletedHighSchool" type="checkbox" />Ensino médio concluído</label></fieldset><fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Responsável maior de idade (obrigatório para aprendiz menor)</legend><label className="sm:col-span-2"><span className="portal-label">Pessoa responsável</span><SearchSelect name="guardianPersonId" label="Pessoa responsável" endpoint="/api/backend/lookups/people?purpose=guardian" /></label><label><span className="portal-label">Relação</span><input name="relationshipType" maxLength={30} defaultValue="Responsável" className="portal-field mt-2 h-10 w-full px-3" /></label><div className="grid content-end gap-2 pb-1"><label className="flex items-center gap-2 text-sm"><input name="legalGuardian" type="checkbox" defaultChecked />Responsável legal</label><label className="flex items-center gap-2 text-sm"><input name="primaryContact" type="checkbox" defaultChecked />Contato principal</label></div></fieldset></RequestForm>}</CreatorModal>;
+  return <CreatorModal title="Cadastrar aprendiz" trigger="Novo aprendiz">{(close) => <RequestForm
+    close={close}
+    success={() => router.refresh()}
+    endpoint="/api/backend/learner-onboardings"
+    successLabel="Cadastrar aprendiz"
+    build={(form) => ({ person: personFrom(form), ...learnerFrom(form) })}
+  >
+    <div className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">Pessoa, endereço e perfil de aprendiz são enviados em uma única operação. A conta de acesso continua sendo criada apenas pelo cadastro público.</div>
+    <PersonFields />
+    <PersonTypeFields requiredType="LEARNER" />
+    <AddressFields />
+    <LearnerProfileFields />
+    <LearnerGuardianFields />
+  </RequestForm>}</CreatorModal>;
+}
+
+function learnerFrom(form: FormData) {
+  const guardianPersonId = String(form.get("guardianPersonId") ?? "");
+  return {
+    learner: {
+      registrationNumber: String(form.get("registrationNumber") ?? "").trim(),
+      hasCompletedHighSchool: form.get("hasCompletedHighSchool") === "on",
+      status: String(form.get("status")) as RecordStatus,
+    },
+    guardians: guardianPersonId ? [{
+      guardianPersonId,
+      relationshipType: String(form.get("relationshipType") ?? "").trim(),
+      legalGuardian: form.get("legalGuardian") === "on",
+      primaryContact: form.get("primaryContact") === "on",
+    }] : [],
+  };
+}
+
+function LearnerProfileFields() {
+  return <fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2">
+    <legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Perfil de aprendiz</legend>
+    <label><span className="portal-label">Matrícula</span><input name="registrationNumber" maxLength={30} className="portal-field mt-2 h-10 w-full px-3" required /></label>
+    <label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="SUSPENDED">Suspenso</option></select></label>
+    <label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="hasCompletedHighSchool" type="checkbox" />Ensino médio concluído</label>
+  </fieldset>;
+}
+
+function LearnerGuardianFields() {
+  return <fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2">
+    <legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Responsável maior de idade (obrigatório para aprendiz menor)</legend>
+    <label className="sm:col-span-2"><span className="portal-label">Pessoa responsável</span><SearchSelect name="guardianPersonId" label="Pessoa responsável" endpoint="/api/backend/lookups/people?purpose=guardian" /></label>
+    <label><span className="portal-label">Relação</span><input name="relationshipType" maxLength={30} defaultValue="Responsável" className="portal-field mt-2 h-10 w-full px-3" /></label>
+    <div className="grid content-end gap-2 pb-1"><label className="flex items-center gap-2 text-sm"><input name="legalGuardian" type="checkbox" defaultChecked />Responsável legal</label><label className="flex items-center gap-2 text-sm"><input name="primaryContact" type="checkbox" defaultChecked />Contato principal</label></div>
+  </fieldset>;
 }
 
 export function CohortCreator() {

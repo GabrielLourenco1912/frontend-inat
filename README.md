@@ -33,7 +33,7 @@ Consulte [frontend-web-nextjs.md](./frontend-web-nextjs.md) para autenticação,
 
 O cadastro e a edição de pessoas permitem selecionar vários tipos em `personTypes`: administrador, instrutor, aprendiz, gestor de empresa e responsável. A listagem possui filtro por tipo e o detalhe exibe todas as classificações da pessoa.
 
-Os seletores de instrutor, responsável e funções organizacionais correspondentes aos tipos mostram pessoas compatíveis. Instrutores também precisam de conta ativa com role `INSTRUCTOR`; responsáveis precisam ter ao menos 18 anos. O onboarding de aprendiz inclui o tipo `LEARNER`. Na administração de usuários, as novas roles disponíveis correspondem aos tipos da pessoa vinculada; classificar uma pessoa não concede acesso automaticamente.
+Os seletores de instrutor, responsável e funções organizacionais correspondentes aos tipos mostram pessoas compatíveis. Instrutores também precisam de conta ativa com role `INSTRUCTOR`; responsáveis precisam ter ao menos 18 anos. O onboarding na aba Aprendizes inclui o tipo `LEARNER`. No detalhe de uma pessoa já cadastrada, a ação "Cadastrar como aprendiz" cria o perfil e os vínculos de responsáveis; ela fica desativada até a pessoa possuir o tipo `LEARNER` e também quando já existe um perfil. Na administração de usuários, as novas roles disponíveis correspondem aos tipos da pessoa vinculada; classificar uma pessoa não concede acesso automaticamente.
 
 ## Documentos por cadastro
 

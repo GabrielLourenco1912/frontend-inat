@@ -5,9 +5,9 @@ import { DefinitionList, PageHeader, SectionHeading, Sheet } from "@/components/
 import { PersonActions } from "@/components/portal/ResourceCreators";
 import { DetailTabs } from "@/components/portal/DetailTabs";
 import { PersonDocumentManager } from "@/components/portal/PersonDocumentManager";
-import type { DocumentType, Person } from "@/lib/api/domain-contracts";
+import type { DocumentType, Learner, Person } from "@/lib/api/domain-contracts";
 import { formatDate, maskTaxId } from "@/lib/api/format";
-import { serverApiAll, serverApiGetOrNull } from "@/lib/api/server";
+import { serverApiAll, serverApiGetOrNull, serverApiPage } from "@/lib/api/server";
 import { requireCapability } from "@/lib/auth/session";
 import { personTypeLabels } from "@/lib/people/person-types";
 import { firstQueryValue } from "@/lib/documents/navigation";
@@ -19,13 +19,16 @@ export default async function PersonDetailPage({ params, searchParams }: {
   const [, { personId }, query] = await Promise.all([requireCapability("people:read"), params, searchParams]);
   const person = await serverApiGetOrNull<Person>(`/api/people/${encodeURIComponent(personId)}`);
   if (!person) notFound();
+  const learner = person.personTypes.includes("LEARNER")
+    ? (await serverApiPage<Learner>(`/api/learners?personId=${encodeURIComponent(person.id)}&size=1`)).content[0] ?? null
+    : null;
   const tab = firstQueryValue(query.tab) === "documentos" ? "documentos" : "dados";
   const [documentResult, documentTypes] = tab === "documentos" ? await Promise.all([
     personDocumentPage(person.id, query),
     serverApiAll<DocumentType>("/api/document-types"),
   ]) : [null, []];
   return <>
-    <PageHeader eyebrow="Cadastro de pessoa" title={person.fullName} description={person.contactEmail || person.phoneNumber} backHref="/sistema/pessoas" backLabel="Voltar para pessoas" action={<PersonActions person={person} />} />
+    <PageHeader eyebrow="Cadastro de pessoa" title={person.fullName} description={person.contactEmail || person.phoneNumber} backHref="/sistema/pessoas" backLabel="Voltar para pessoas" action={<PersonActions person={person} learner={learner} />} />
     <DetailTabs activeTab={tab} tabs={[{ id: "dados", label: "Dados pessoais" }, { id: "documentos", label: "Documentos" }]} label="Seções da pessoa" />
     {tab === "documentos" ? <PersonDocumentManager key={`${person.id}:${documentResult?.page.page}:${firstQueryValue(query.document) ?? ""}`} person={person} documents={documentResult?.page.content ?? []} focusedDocument={documentResult?.focusedDocument} pagination={documentResult ? paginationProps(documentResult.page, { ...query, document: undefined, tab: "documentos" }) : undefined} documentTypes={documentTypes} initialDocumentId={firstQueryValue(query.document)} /> : <div className="grid gap-5 xl:grid-cols-2">
       <Sheet><SectionHeading title="Identificação" icon="person" /><DefinitionList columns={2} items={[
