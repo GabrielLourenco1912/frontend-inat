@@ -16,7 +16,7 @@ export default async function OrganizationsPage({ searchParams }: ListPageProps)
     id: organization.id,
     href: `/sistema/organizacoes/${organization.id}`,
     name: organization.tradeName || organization.legalName,
-    type: apiLabel(organization.organizationType),
+    type: organization.organizationTypes.map(apiLabel).sort().join(", "),
     document: maskTaxId(organization.taxId),
     city: `${organization.address.city}/${organization.address.stateCode}`,
     contact: organization.contactEmail,

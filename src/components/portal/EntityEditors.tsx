@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { SearchSelect } from "@/components/design-system/SearchSelect";
+import { OrganizationTypeFields } from "@/components/portal/OrganizationTypeFields";
 import { Icon } from "@/components/design-system/Icon";
 import { putJson, requestErrorMessage } from "@/lib/api/client";
-import type { Contract, Learner, Organization, RecordStatus } from "@/lib/api/domain-contracts";
+import type { Contract, Learner, Organization, OrganizationType, RecordStatus } from "@/lib/api/domain-contracts";
 
 function EditorModal({ title, children }: { title: string; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -63,14 +64,14 @@ function AddressInputs({ organization }: { organization: Organization }) {
   </fieldset>;
 }
 
-export function OrganizationEditor({ organization, hasContracts }: { organization: Organization; hasContracts: boolean }) {
+export function OrganizationEditor({ organization, hasContracts, requiredTypes }: { organization: Organization; hasContracts: boolean; requiredTypes: OrganizationType[] }) {
   return <EditorModal title="Editar organização">{(close) => <EditForm close={close} endpoint={`/api/backend/organizations/${encodeURIComponent(organization.id)}`} build={(form) => ({
     parentOrganizationId: String(form.get("parentOrganizationId") ?? "") || null,
     address: { postalCode: String(form.get("postalCode") ?? "").replace(/\D/g, ""), street: String(form.get("street") ?? "").trim(), streetNumber: String(form.get("streetNumber") ?? "").trim(), addressLine2: String(form.get("addressLine2") ?? "").trim() || null, district: String(form.get("district") ?? "").trim(), city: String(form.get("city") ?? "").trim(), stateCode: String(form.get("stateCode") ?? "").toUpperCase(), countryCode: String(form.get("countryCode") ?? "BR").toUpperCase() },
-    organizationType: String(form.get("organizationType")), legalName: String(form.get("legalName") ?? "").trim(), tradeName: String(form.get("tradeName") ?? "").trim() || null, taxId: String(form.get("taxId") ?? "").replace(/\D/g, ""), contactEmail: String(form.get("contactEmail") ?? "").trim(), phoneNumber: String(form.get("phoneNumber") ?? "").trim(), attendanceClosingDay: form.get("attendanceClosingDay") ? Number(form.get("attendanceClosingDay")) : null, status: String(form.get("status")),
+    organizationTypes: form.getAll("organizationTypes").map(String), legalName: String(form.get("legalName") ?? "").trim(), tradeName: String(form.get("tradeName") ?? "").trim() || null, taxId: String(form.get("taxId") ?? "").replace(/\D/g, ""), contactEmail: String(form.get("contactEmail") ?? "").trim(), phoneNumber: String(form.get("phoneNumber") ?? "").trim(), attendanceClosingDay: form.get("attendanceClosingDay") ? Number(form.get("attendanceClosingDay")) : null, status: String(form.get("status")),
   })}>
     <div className="grid gap-4 sm:grid-cols-2">
-      <label><span className="portal-label">Tipo</span><select name="organizationType" defaultValue={organization.organizationType} disabled={hasContracts} className="portal-field mt-2 h-10 w-full px-3 disabled:bg-[var(--inat-paper)]"><option value="EMPLOYER">Empresa</option><option value="SCHOOL">Escola</option></select>{hasContracts ? <input type="hidden" name="organizationType" value={organization.organizationType} /> : null}</label>
+      <OrganizationTypeFields types={organization.organizationTypes} requiredTypes={requiredTypes} />
       <label><span className="portal-label">Situação</span><select name="status" defaultValue={organization.status} className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativa</option><option value="INACTIVE">Inativa</option><option value="SUSPENDED">Suspensa</option></select></label>
       <label className="sm:col-span-2"><span className="portal-label">Razão social</span><input name="legalName" defaultValue={organization.legalName} required className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label><span className="portal-label">Nome fantasia</span><input name="tradeName" defaultValue={organization.tradeName ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
@@ -79,7 +80,7 @@ export function OrganizationEditor({ organization, hasContracts }: { organizatio
       <label><span className="portal-label">Telefone</span><input name="phoneNumber" defaultValue={organization.phoneNumber} required className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label><span className="portal-label">Fechamento de ponto</span><input name="attendanceClosingDay" defaultValue={organization.attendanceClosingDay ?? ""} type="number" min="1" max="31" className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label className="sm:col-span-2"><span className="portal-label">Organização superior</span><SearchSelect name="parentOrganizationId" label="Organização superior" endpoint={`/api/backend/lookups/organizations?purpose=parent&excludeId=${encodeURIComponent(organization.id)}`} initialOption={organization.parentOrganizationId ? { id: organization.parentOrganizationId, label: organization.parentOrganizationId } : undefined} /></label>
-      {hasContracts ? <p className="text-xs text-[var(--inat-muted)] sm:col-span-2">Tipo e CNPJ ficam preservados porque a organização já participa de contratos.</p> : null}
+      {hasContracts ? <p className="text-xs text-[var(--inat-muted)] sm:col-span-2">CNPJ e tipos usados em contratos ficam preservados. Você pode adicionar outro tipo.</p> : null}
     </div>
     <AddressInputs organization={organization} />
   </EditForm>}</EditorModal>;

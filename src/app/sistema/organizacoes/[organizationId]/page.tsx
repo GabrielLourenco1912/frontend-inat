@@ -19,6 +19,7 @@ import type {
   Learner,
   Organization,
   OrganizationMembership,
+  OrganizationType,
   Person,
 } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDate, formatPeriod, maskTaxId } from "@/lib/api/format";
@@ -58,11 +59,16 @@ export default async function OrganizationDetailPage({
   const learnerPersonMap = new Map(
     relatedLearners.map((learner) => [learner.id, personMap.get(learner.personId)]),
   );
+  const requiredTypes: OrganizationType[] = [
+    ...(contracts.some((contract) => contract.employerId === organization.id) ? ["EMPLOYER" as const] : []),
+    ...(contracts.some((contract) => contract.schoolId === organization.id) ? ["SCHOOL" as const] : []),
+  ];
+  const typeLabel = organization.organizationTypes.map(apiLabel).sort().join(", ");
 
   return (
     <>
       <PageHeader
-        eyebrow={apiLabel(organization.organizationType)}
+        eyebrow={typeLabel}
         title={organization.tradeName || organization.legalName}
         description={organization.legalName}
         backHref="/sistema/organizacoes"
@@ -71,12 +77,12 @@ export default async function OrganizationDetailPage({
       />
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Sheet>
-          <SectionHeading title="Identificação e contato" icon="building" action={admin ? <OrganizationEditor organization={organization} hasContracts={contracts.length > 0} /> : undefined} />
+          <SectionHeading title="Identificação e contato" icon="building" action={admin ? <OrganizationEditor organization={organization} hasContracts={contracts.length > 0} requiredTypes={requiredTypes} /> : undefined} />
           <DefinitionList columns={2} items={[
             { label: "Razão social", value: organization.legalName },
             { label: "Nome fantasia", value: organization.tradeName || "Não informado" },
             { label: "CNPJ", value: maskTaxId(organization.taxId), mono: true },
-            { label: "Tipo", value: apiLabel(organization.organizationType) },
+            { label: "Tipos", value: typeLabel },
             { label: "E-mail", value: organization.contactEmail },
             { label: "Telefone", value: organization.phoneNumber },
             { label: "Fechamento de ponto", value: organization.attendanceClosingDay ? `Dia ${organization.attendanceClosingDay} de cada mês` : "Não informado" },

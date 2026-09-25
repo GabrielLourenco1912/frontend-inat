@@ -9,12 +9,12 @@ import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
 import { PersonTypeFields } from "@/components/portal/PersonTypeFields";
+import { OrganizationTypeFields } from "@/components/portal/OrganizationTypeFields";
 import { deleteResource, postJson, putJson, requestErrorMessage } from "@/lib/api/client";
 import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 import type {
   LessonStatus,
   Learner,
-  OrganizationType,
   Person,
   PersonTypeCode,
   RecordStatus,
@@ -157,7 +157,7 @@ export function OrganizationCreator() {
   return <CreatorModal title="Cadastrar organização" trigger="Nova organização">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/organizations" successLabel="Cadastrar organização" build={(form) => ({
     parentOrganizationId: String(form.get("parentOrganizationId") ?? "") || null,
     address: addressFrom(form),
-    organizationType: String(form.get("organizationType")) as OrganizationType,
+    organizationTypes: form.getAll("organizationTypes").map(String),
     legalName: String(form.get("legalName") ?? "").trim(),
     tradeName: String(form.get("tradeName") ?? "").trim() || null,
     taxId: String(form.get("taxId") ?? "").replace(/\D/g, ""),
@@ -167,7 +167,7 @@ export function OrganizationCreator() {
       ? Number(form.get("attendanceClosingDay"))
       : null,
     status: String(form.get("status")) as RecordStatus,
-  })}><div className="grid gap-4 sm:grid-cols-2"><label><span className="portal-label">Tipo</span><select name="organizationType" defaultValue="EMPLOYER" className="portal-field mt-2 h-10 w-full px-3"><option value="EMPLOYER">Empresa</option><option value="SCHOOL">Escola</option></select></label><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativa</option><option value="INACTIVE">Inativa</option><option value="SUSPENDED">Suspensa</option></select></label><label className="sm:col-span-2"><span className="portal-label">Razão social</span><input name="legalName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome fantasia</span><input name="tradeName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">CNPJ</span><input name="taxId" inputMode="numeric" pattern="[0-9]{14}" maxLength={14} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">E-mail</span><input name="contactEmail" type="email" maxLength={254} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Telefone</span><input name="phoneNumber" maxLength={20} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Fechamento de ponto (opcional)</span><input name="attendanceClosingDay" type="number" inputMode="numeric" min="1" max="31" placeholder="Dia do mês" className="portal-field mt-2 h-10 w-full px-3" /><span className="mt-1 block text-xs text-[var(--inat-muted)]">Limita a presença automática de aulas online.</span></label><label className="sm:col-span-2"><span className="portal-label">Organização superior (opcional)</span><SearchSelect name="parentOrganizationId" label="Organização superior" endpoint="/api/backend/lookups/organizations?purpose=parent" /></label></div><AddressFields /></RequestForm>}</CreatorModal>;
+  })}><div className="grid gap-4 sm:grid-cols-2"><OrganizationTypeFields /><label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativa</option><option value="INACTIVE">Inativa</option><option value="SUSPENDED">Suspensa</option></select></label><label className="sm:col-span-2"><span className="portal-label">Razão social</span><input name="legalName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Nome fantasia</span><input name="tradeName" maxLength={180} className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">CNPJ</span><input name="taxId" inputMode="numeric" pattern="[0-9]{14}" maxLength={14} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">E-mail</span><input name="contactEmail" type="email" maxLength={254} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Telefone</span><input name="phoneNumber" maxLength={20} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Fechamento de ponto (opcional)</span><input name="attendanceClosingDay" type="number" inputMode="numeric" min="1" max="31" placeholder="Dia do mês" className="portal-field mt-2 h-10 w-full px-3" /><span className="mt-1 block text-xs text-[var(--inat-muted)]">Limita a presença automática de aulas online.</span></label><label className="sm:col-span-2"><span className="portal-label">Organização superior (opcional)</span><SearchSelect name="parentOrganizationId" label="Organização superior" endpoint="/api/backend/lookups/organizations?purpose=parent" /></label></div><AddressFields /></RequestForm>}</CreatorModal>;
 }
 
 export function LearnerOnboardingCreator() {

@@ -72,7 +72,7 @@ export type Organization = {
   id: string;
   parentOrganizationId: string | null;
   address: Address;
-  organizationType: OrganizationType;
+  organizationTypes: OrganizationType[];
   legalName: string;
   tradeName: string | null;
   taxId: string;

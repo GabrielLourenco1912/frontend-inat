@@ -216,7 +216,7 @@ export const apiGroups: ApiGroup[] = [
   {
     id: "organizations",
     name: "Organizações e vínculos",
-    description: "Empresas, escolas e os vínculos das pessoas com cada organização.",
+    description: "Organizações podem atuar como empresas, escolas ou ambos; vínculos ligam pessoas a cada organização.",
     endpoints: [
       ...crud({
         base: "/api/organizations",
@@ -608,8 +608,8 @@ export const backendModules: BackendModule[] = [
     name: "Organizações",
     kind: "Domínio",
     description: "Empresas, escolas e vínculos funcionais das pessoas.",
-    models: ["Organization", "OrganizationMembership"],
-    rules: ["Tipo EMPLOYER ou SCHOOL", "Gestor limitado à empresa vinculada"],
+    models: ["Organization", "OrganizationTypeEntry", "OrganizationMembership"],
+    rules: ["Um ou mais tipos: EMPLOYER e/ou SCHOOL", "Tipos exigidos por contratos não podem ser removidos", "Gestor limitado à empresa vinculada"],
   },
   {
     packageName: "person",

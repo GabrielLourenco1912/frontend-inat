@@ -178,7 +178,7 @@ export const requestContracts: Record<string, ApiRequestContract> = {
     example: {
       parentOrganizationId: null,
       address: addressExample,
-      organizationType: "EMPLOYER",
+      organizationTypes: ["EMPLOYER", "SCHOOL"],
       legalName: "Empresa Exemplo Ltda.",
       tradeName: "Empresa Exemplo",
       taxId: "12345678000195",
@@ -188,7 +188,8 @@ export const requestContracts: Record<string, ApiRequestContract> = {
       status: "ACTIVE",
     },
     rules: [
-      "organizationType — EMPLOYER ou SCHOOL",
+      "organizationTypes — obrigatório, ao menos um de EMPLOYER e/ou SCHOOL; envie como array no POST e no PUT",
+      "Ao editar, tipos já usados por contratos não podem ser removidos; outros podem ser adicionados",
       "taxId — exatamente 14 dígitos",
       "attendanceClosingDay — opcional, entre 1 e 31",
       "status — ACTIVE, INACTIVE ou SUSPENDED",
