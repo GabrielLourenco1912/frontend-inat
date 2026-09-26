@@ -192,12 +192,14 @@ for (const [resource, collection, field] of [
     await withRecords(mock[collection], 65, async (records) => {
       const previousLearner = { ...mock.learners[0] };
       try {
-        if (!field) mock.learners[0].registrationNumber = "Resultado remoto";
+        const queryTerm = resource === "learners" || resource === "contracts" ? "9000" : "Resultado remoto";
+        if (!field) mock.learners[0].registrationNumber = 900000;
         records.forEach((record, index) => {
-          if (field) record[field] = index < 40 ? "Outro registro" : "Resultado remoto";
+          if (resource === "learners") record.registrationNumber = index < 40 ? 1000 + index : 900000 + index;
+          else if (field) record[field] = index < 40 ? "Outro registro" : "Resultado remoto";
           else record.learnerId = index < 40 ? "unknown" : mock.learners[0].id;
         });
-        const query = { q: "Resultado remoto", page: "2" };
+        const query = { q: queryTerm, page: "2" };
         const page = await serverListPage(`/api/${resource}`, query);
         assert.equal(page.totalElements, 25);
         assert.equal(page.content.length, 5);

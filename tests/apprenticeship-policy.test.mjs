@@ -68,7 +68,7 @@ beforeEach(() => {
     "/api/activities/lesson/lesson": [],
     "/api/lesson-participants/lesson/lesson": [{ learnerId: "listed", status: "EXPECTED" }],
     "/api/attendance-records/lesson/lesson": [],
-    "/api/learners": ids.map((id) => ({ id, personId: `person-${id}`, registrationNumber: id, status: id === "suspended" ? "SUSPENDED" : "ACTIVE" })),
+    "/api/learners": ids.map((id, index) => ({ id, personId: `person-${id}`, registrationNumber: index + 1, status: id === "suspended" ? "SUSPENDED" : "ACTIVE" })),
     "/api/people": ids.map((id) => ({ id: `person-${id}`, fullName: id, status: id === "inactive-person" ? "INACTIVE" : "ACTIVE" })),
     "/api/contracts": ids.map((id) => contract(id, id === "twenty" ? 1200 : id === "forty" ? 2400 : 1800,
       id === "expired" ? { endDate: "2026-09-09" } : {})),

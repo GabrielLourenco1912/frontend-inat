@@ -116,7 +116,7 @@ export function PersonActions({ person, learner }: { person: Person; learner: Le
         successLabel="Cadastrar aprendiz"
         build={learnerFrom}
       >
-        <p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">O cadastro da pessoa será aproveitado. Informe a matrícula e, se ela for menor de idade, um responsável legal.</p>
+        <p className="border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-4 text-sm leading-6">O cadastro da pessoa será aproveitado. A matrícula será gerada automaticamente e, se a pessoa for menor de idade, informe um responsável legal.</p>
         <LearnerProfileFields />
         <LearnerGuardianFields />
       </RequestForm>}
@@ -192,7 +192,6 @@ function learnerFrom(form: FormData) {
   const guardianPersonId = String(form.get("guardianPersonId") ?? "");
   return {
     learner: {
-      registrationNumber: String(form.get("registrationNumber") ?? "").trim(),
       hasCompletedHighSchool: form.get("hasCompletedHighSchool") === "on",
       status: String(form.get("status")) as RecordStatus,
     },
@@ -208,7 +207,7 @@ function learnerFrom(form: FormData) {
 function LearnerProfileFields() {
   return <fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2">
     <legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Perfil de aprendiz</legend>
-    <label><span className="portal-label">Matrícula</span><input name="registrationNumber" maxLength={30} className="portal-field mt-2 h-10 w-full px-3" required /></label>
+    <p className="text-sm text-[var(--inat-muted)] sm:col-span-2">O número de matrícula é gerado pelo banco ao salvar o aprendiz.</p>
     <label><span className="portal-label">Situação</span><select name="status" defaultValue="ACTIVE" className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="SUSPENDED">Suspenso</option></select></label>
     <label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="hasCompletedHighSchool" type="checkbox" />Ensino médio concluído</label>
   </fieldset>;

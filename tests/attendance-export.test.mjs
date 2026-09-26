@@ -153,7 +153,7 @@ test("empty exports retain the headers and do not invent attendance", async () =
 test("workbook formats one point row per lesson and preserves formula-like notes as text", async () => {
   const report = await attendanceExportData(actor, "learners", mock.attendanceRecords[0].learnerId);
   const row = report.rows[0];
-  const special = { ...row, learner: { ...row.learner, registrationNumber: "0000123" }, learnerPerson: { ...row.learnerPerson, fullName: "João & Conceição" },
+  const special = { ...row, learner: { ...row.learner, registrationNumber: 123 }, learnerPerson: { ...row.learnerPerson, fullName: "João & Conceição" },
     lesson: { ...row.lesson, startsAt: "2026-09-11T01:00:00Z" }, record: { ...row.record, notes: '=HYPERLINK("https://example.test")' } };
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await attendanceWorkbook({ ...report, rows: [special] }));
@@ -175,7 +175,7 @@ test("organization workbook creates a separate point block and subtotal per lear
   const first = await attendanceExportData(actor, "learners", mock.attendanceRecords[0].learnerId);
   const rows = [
     first.rows[0],
-    { ...first.rows[0], record: { ...first.rows[0].record, id: "second-record" }, learner: { ...first.rows[0].learner, id: "second-learner", registrationNumber: "MAT-2" }, learnerPerson: { ...first.rows[0].learnerPerson, id: "second-person", fullName: "Outro Aprendiz" } },
+    { ...first.rows[0], record: { ...first.rows[0].record, id: "second-record" }, learner: { ...first.rows[0].learner, id: "second-learner", registrationNumber: 2 }, learnerPerson: { ...first.rows[0].learnerPerson, id: "second-person", fullName: "Outro Aprendiz" } },
   ];
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await attendanceWorkbook({ ...first, scope: "organizations", title: "Organização teste", learnerCount: 2, rows }));

@@ -89,7 +89,7 @@ export async function attendanceExportData(
     selectedLearner = await serverApiGet<Learner>(
       `/api/learners/${encodeURIComponent(id)}`,
     );
-    title = selectedLearner.registrationNumber;
+    title = String(selectedLearner.registrationNumber);
   }
 
   const records = await serverApiAll<AttendanceRecord>(
@@ -155,9 +155,8 @@ export async function attendanceExportData(
           ?? (admin ? "Instrutor não identificado" : "Nome restrito ao perfil"),
       };
     })
-    .sort((a, b) => a.learner.registrationNumber.localeCompare(
-      b.learner.registrationNumber,
-    ) || a.lesson.startsAt.localeCompare(b.lesson.startsAt)
+    .sort((a, b) => a.learner.registrationNumber - b.learner.registrationNumber
+      || a.lesson.startsAt.localeCompare(b.lesson.startsAt)
       || a.record.id.localeCompare(b.record.id));
 
   return {

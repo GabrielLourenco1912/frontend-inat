@@ -54,8 +54,8 @@ export default async function LearnersPage({ searchParams }: ListPageProps) {
     href: `/sistema/aprendizes/${learner.id}`,
     name:
       personMap.get(learner.personId) ??
-      (learner.id === actor.learnerId ? actor.name : learner.registrationNumber),
-    registration: learner.registrationNumber,
+      (learner.id === actor.learnerId ? actor.name : String(learner.registrationNumber)),
+    registration: String(learner.registrationNumber),
     education: learner.hasCompletedHighSchool ? "Ensino médio concluído" : "Ensino médio em curso",
     cohort: enrollment ? cohortMap.get(enrollment.cohortId) ?? enrollment.cohortId : "Sem turma",
     company: contract

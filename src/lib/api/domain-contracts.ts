@@ -100,7 +100,7 @@ export type OrganizationMembership = {
 export type Learner = {
   id: string;
   personId: string;
-  registrationNumber: string;
+  registrationNumber: number;
   hasCompletedHighSchool: boolean;
   status: RecordStatus;
   createdAt: string;

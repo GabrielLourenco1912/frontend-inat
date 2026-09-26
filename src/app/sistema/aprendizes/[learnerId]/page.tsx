@@ -161,7 +161,7 @@ export default async function LearnerDetailPage({
       initialDocumentId={firstQueryValue(query.document)}
       learner={learner}
       person={person}
-      displayName={person?.fullName ?? (learnerSelf ? actor.name : learner.registrationNumber)}
+      displayName={person?.fullName ?? (learnerSelf ? actor.name : String(learner.registrationNumber))}
       contracts={contracts}
       organizations={organizations}
       guardians={guardians}

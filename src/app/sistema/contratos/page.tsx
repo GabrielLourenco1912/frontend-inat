@@ -38,7 +38,7 @@ export default async function ContractsPage({ searchParams }: ListPageProps) {
       href: `/sistema/contratos/${contract.id}`,
       learner:
         (learner && personMap.get(learner.personId)) ||
-        (contract.learnerId === actor.learnerId ? actor.name : learner?.registrationNumber) ||
+        (contract.learnerId === actor.learnerId ? actor.name : learner ? String(learner.registrationNumber) : null) ||
         contract.learnerId,
       company: organizationMap.get(contract.employerId) ?? contract.employerId,
       period: formatPeriod(contract.startDate, contract.endDate),

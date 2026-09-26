@@ -37,12 +37,11 @@ function EditForm({ endpoint, build, close, children }: { endpoint: string; buil
 export function LearnerEditor({ learner }: { learner: Learner }) {
   return <EditorModal title="Editar aprendiz">{(close) => <EditForm close={close} endpoint={`/api/backend/learners/${encodeURIComponent(learner.id)}`} build={(form) => ({
     personId: learner.personId,
-    registrationNumber: String(form.get("registrationNumber") ?? "").trim(),
     hasCompletedHighSchool: form.get("hasCompletedHighSchool") === "on",
     status: String(form.get("status")) as RecordStatus,
   })}>
     <div className="grid gap-4 sm:grid-cols-2">
-      <label><span className="portal-label">Matrícula</span><input name="registrationNumber" defaultValue={learner.registrationNumber} maxLength={30} required className="portal-field mt-2 h-10 w-full px-3" /></label>
+      <p className="text-sm text-[var(--inat-muted)] sm:col-span-2">Matrícula {learner.registrationNumber} · número gerado pelo banco e preservado na edição.</p>
       <label><span className="portal-label">Situação</span><select name="status" defaultValue={learner.status} className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="SUSPENDED">Suspenso</option></select></label>
       <label className="flex items-center gap-2 text-sm sm:col-span-2"><input name="hasCompletedHighSchool" type="checkbox" defaultChecked={learner.hasCompletedHighSchool} />Ensino médio concluído</label>
       <p className="text-xs leading-5 text-[var(--inat-muted)] sm:col-span-2">A pessoa vinculada é preservada. A inativação continua sujeita aos contratos vigentes.</p>

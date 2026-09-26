@@ -214,13 +214,12 @@ export const requestContracts: Record<string, ApiRequestContract> = {
   "LearnerDtos.Request": {
     example: {
       personId,
-      registrationNumber: "APR-2026-001",
       hasCompletedHighSchool: false,
       status: "ACTIVE",
     },
     rules: [
       "personId — deve apontar para pessoa com personType LEARNER",
-      "registrationNumber — obrigatório, máximo de 30 caracteres",
+      "registrationNumber — gerado pelo banco na criação; não é enviado nem alterado nas requisições",
       "status — ACTIVE, INACTIVE ou SUSPENDED",
     ],
   },
@@ -228,7 +227,6 @@ export const requestContracts: Record<string, ApiRequestContract> = {
     example: {
       person: personExample,
       learner: {
-        registrationNumber: "APR-2026-001",
         hasCompletedHighSchool: false,
         status: "ACTIVE",
       },
@@ -243,6 +241,7 @@ export const requestContracts: Record<string, ApiRequestContract> = {
     },
     rules: [
       "person.personTypes — deve incluir LEARNER",
+      "learner.registrationNumber — gerado pelo banco e retornado na resposta",
       "guardians — obrigatório, aceita até 10 itens e pode ser [] quando as regras de idade permitirem",
       "menor de 18 anos — exige ao menos um responsável legal adulto com personType GUARDIAN",
     ],

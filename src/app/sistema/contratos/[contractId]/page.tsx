@@ -66,7 +66,7 @@ export default async function ContractDetailPage({
   const organizationNames = Object.fromEntries(organizationMap);
   const learnerName =
     person?.fullName ||
-    (contract.learnerId === actor.learnerId ? actor.name : learner?.registrationNumber) ||
+    (contract.learnerId === actor.learnerId ? actor.name : learner ? String(learner.registrationNumber) : null) ||
     contract.learnerId;
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "America/Sao_Paulo",
