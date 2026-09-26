@@ -127,11 +127,11 @@ const businessRules: Array<{
   {
     icon: "check",
     title: "Frequência online",
-    description: "A presença pode nascer da conclusão efetiva das atividades.",
+    description: "O scheduler reconhece a presença depois da correção de todas as atividades.",
     items: [
-      "Todas as atividades PUBLISHED ou CLOSED da aula devem ter entrega SUBMITTED, LATE ou GRADED.",
+      "A cada 60 segundos por padrão, o backend verifica se todas as atividades PUBLISHED ou CLOSED da aula online estão GRADED com nota maior que 6 em cada uma.",
       "O fechamento mensal respeita attendanceClosingDay da empresa e o fuso America/Sao_Paulo.",
-      "A verificação bloqueia o participante para impedir registros duplicados em concorrência.",
+      "Após o fim da aula, a falta automática pode virar presença quando as correções se completarem; lançamentos manuais são preservados.",
     ],
   },
   {
