@@ -4,7 +4,7 @@ Portal público e sistema interno em Next.js 16, integrado ao backend Spring Boo
 
 ## Desenvolvimento
 
-Copie as variáveis descritas em [frontend-web-nextjs.md](./frontend-web-nextjs.md) e execute:
+Defina `BACKEND_URL=http://localhost:8080` para execução local. Em HTTP local, defina também `FRONTEND_AUTH_COOKIE_SECURE=false` e, no backend, `API_SECURITY_REFRESH_COOKIE_SECURE=false`. Depois execute:
 
 ```bash
 npm install
@@ -20,14 +20,9 @@ npm run lint
 npm test
 npx tsc --noEmit
 npm run build
-npm run check:branches
 ```
 
 Na `develop`, as fixtures não participam da execução: uma base sem registros produz estados vazios reais. Os arquivos de demonstração também estão disponíveis nessa branch para testes compartilhados. A criação de contas ocorre somente pelo cadastro público (`/criar-conta`); o frontend não consome `POST /api/users`.
-
-Consulte [branch-workflow.md](./docs/branch-workflow.md) para sincronizar as branches sem substituir a integração real pelos mocks. A verificação compara os commits das duas referências locais; execute-a após concluir os commits e a sincronização.
-
-Consulte [frontend-web-nextjs.md](./frontend-web-nextjs.md) para autenticação, papéis, recursos integrados, uploads multipart e configuração do ambiente.
 
 ## Tipos de pessoa
 

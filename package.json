@@ -11,8 +11,7 @@
     "test:people": "node tests/person-types.test.mjs",
     "test:apprenticeship": "node tests/apprenticeship-policy.test.mjs",
     "test:lists": "node tests/lists.test.mjs",
-    "test": "node --test tests/*.test.mjs",
-    "check:branches": "node scripts/check-branch-parity.mjs"
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
