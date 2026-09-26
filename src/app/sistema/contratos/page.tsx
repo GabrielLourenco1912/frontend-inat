@@ -1,5 +1,6 @@
 import { relatedRecords } from "@/lib/api/related";
-import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
+import { contractStatusOptions } from "@/lib/status-filters";
 import { accessibleContractsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
@@ -49,7 +50,7 @@ export default async function ContractsPage({ searchParams }: ListPageProps) {
   return (
     <>
       <PageHeader eyebrow="Percurso contratual" title={hasRole(actor, "LEARNER") ? "Meu contrato" : "Contratos"} description="Aprendiz, organizações, período e integridade documental no mesmo contexto." action={can(actor, "contracts:manage") ? <ContractCreator /> : undefined} />
-      <DataList key={page.page} pagination={paginationProps(page, query)} records={records} itemLabel="contrato" searchPlaceholder="Buscar aprendiz ou organização" emptyDescription="Nenhum contrato acessível foi encontrado no backend." columns={[
+      <DataList key={page.page} pagination={paginationProps(page, query)} statusOptions={contractStatusOptions} selectedStatus={queryValue(query.status) ?? ""} records={records} itemLabel="contrato" searchPlaceholder="Buscar aprendiz ou organização" emptyDescription="Nenhum contrato acessível foi encontrado no backend." columns={[
         { key: "learner", label: "Aprendiz", primary: true },
         { key: "company", label: "Empresa" },
         { key: "period", label: "Período", hideBelow: "lg" },

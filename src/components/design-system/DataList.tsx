@@ -3,6 +3,7 @@
 import { ServerSearch } from "@/components/design-system/ServerSearch";
 import { useClientPagination } from "@/components/design-system/ClientPagination";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/design-system/Icon";
 import type { Pagination } from "@/lib/pagination";
@@ -32,6 +33,8 @@ export function DataList({
   localSearchNote = true,
   searchable = true,
   pagination,
+  statusOptions,
+  selectedStatus = "",
   emptyIcon,
   emptyTitle,
   emptyDescription,
@@ -44,12 +47,16 @@ export function DataList({
   localSearchNote?: boolean;
   searchable?: boolean;
   pagination?: Pagination;
+  statusOptions?: readonly { value: string; label: string }[];
+  selectedStatus?: string;
   emptyIcon?: IconName;
   emptyTitle?: string;
   emptyDescription?: string;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Todos");
+  const [status, setStatus] = useState("");
+  const serverStatusFilter = Boolean(pagination && statusOptions);
 
   const statuses = useMemo(
     () =>
@@ -67,11 +74,10 @@ export function DataList({
         Object.values(record).some((value) =>
           value?.toLocaleLowerCase("pt-BR").includes(normalized),
         );
-      const matchesStatus =
-        status === "Todos" || record[statusKey] === status;
+      const matchesStatus = serverStatusFilter || !status || record[statusKey] === status;
       return matchesQuery && matchesStatus;
     });
-  }, [query, records, status, statusKey]);
+  }, [query, records, serverStatusFilter, status, statusKey]);
 
   const localPage = useClientPagination(filtered, `${query}:${status}`);
   const visible = pagination ? filtered : localPage.items;
@@ -80,6 +86,22 @@ export function DataList({
   const secondary = columns.filter(
     (column) => column.key !== primary.key && column.key !== statusKey,
   );
+  const statusLabel = columns.find((column) => column.key === statusKey)?.label ?? "Estado";
+  const availableStatuses = serverStatusFilter
+    ? statusOptions ?? []
+    : statuses.map((value) => ({ value, label: value }));
+  const recordCount = serverStatusFilter ? pagination?.total ?? filtered.length : filtered.length;
+
+  function changeStatus(value: string) {
+    if (!serverStatusFilter) {
+      setStatus(value);
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (value) params.set("status", value); else params.delete("status");
+    params.set("page", "1");
+    router.push(`?${params}`, { scroll: false });
+  }
 
   return (
     <div className="border border-[var(--inat-line)] bg-white">
@@ -99,21 +121,21 @@ export function DataList({
           />
         </div>}
         <div className="flex items-center gap-2">
-          {statuses.length > 1 ? (
+          {serverStatusFilter || statuses.length > 1 ? (
             <label className="relative flex-1 sm:flex-none">
-              <span className="sr-only">Filtrar por estado</span>
+              <span className="sr-only">Filtrar por {statusLabel.toLocaleLowerCase("pt-BR")}</span>
               <Icon
                 name="filter"
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--inat-muted)]"
               />
               <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value)}
+                value={serverStatusFilter ? selectedStatus : status}
+                onChange={(event) => changeStatus(event.target.value)}
                 className="portal-field h-10 w-full appearance-none bg-white pl-9 pr-9 text-sm sm:w-44"
               >
-                <option>Todos</option>
-                {statuses.map((item) => (
-                  <option key={item}>{item}</option>
+                <option value="">Todos</option>
+                {availableStatuses.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
               </select>
               <Icon
@@ -123,14 +145,20 @@ export function DataList({
             </label>
           ) : null}
           <span className="hidden whitespace-nowrap font-mono text-xs text-[var(--inat-muted)] sm:inline">
-            {filtered.length} {filtered.length === 1 ? itemLabel : `${itemLabel}s`}
+            {recordCount} {recordCount === 1 ? itemLabel : `${itemLabel}s`}
           </span>
         </div>
       </div> : null}
 
       {searchable && localSearchNote ? (
         <div className="border-b border-[var(--inat-line)] bg-white px-4 py-2 text-[0.6875rem] leading-4 text-[var(--inat-muted)]">
-          {pagination ? "A busca consulta todos os registros acessíveis. O filtro de estado se aplica à página atual." : "A busca filtra todos os registros disponíveis nesta lista."}
+          {serverStatusFilter
+            ? `A busca e o filtro de ${statusLabel.toLocaleLowerCase("pt-BR")} consultam todos os registros acessíveis.`
+            : pagination && statuses.length > 1
+              ? `A busca consulta todos os registros acessíveis. O filtro de ${statusLabel.toLocaleLowerCase("pt-BR")} se aplica à página atual.`
+              : pagination
+                ? "A busca consulta todos os registros acessíveis."
+              : "A busca filtra todos os registros disponíveis nesta lista."}
         </div>
       ) : null}
 
@@ -253,14 +281,14 @@ export function DataList({
       ) : (
         <EmptyState
           title={
-            records.length === 0
+            records.length === 0 && !(pagination && (pagination.search || selectedStatus))
               ? emptyTitle ?? `Nenhum ${itemLabel} disponível`
-              : "Nenhum resultado nesta página"
+              : "Nenhum resultado neste filtro"
           }
           description={
-            records.length === 0
+            records.length === 0 && !(pagination && (pagination.search || selectedStatus))
               ? emptyDescription ?? "Ainda não há registros cadastrados no backend."
-              : "Revise os termos da busca ou remova o filtro de estado."
+              : "Revise os termos da busca ou os filtros."
           }
           icon={emptyIcon ?? (records.length === 0 ? "folder" : "search")}
         />

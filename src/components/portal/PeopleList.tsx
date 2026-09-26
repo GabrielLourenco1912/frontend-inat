@@ -8,8 +8,9 @@ import { DataList } from "@/components/design-system/DataList";
 import type { Person } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDate, maskTaxId } from "@/lib/api/format";
 import { hasPersonType, PERSON_TYPE_OPTIONS, personTypeLabels } from "@/lib/people/person-types";
+import { recordStatusOptions } from "@/lib/status-filters";
 
-export function PeopleList({ people, pagination, initialPersonType = "" }: { people: Person[]; pagination?: Pagination; initialPersonType?: string }) {
+export function PeopleList({ people, pagination, initialPersonType = "", selectedStatus = "" }: { people: Person[]; pagination?: Pagination; initialPersonType?: string; selectedStatus?: string }) {
   const router = useRouter();
   const [personType, setPersonType] = useState(initialPersonType);
   const records = people.filter((person) => !personType || hasPersonType(person, personType))
@@ -29,14 +30,19 @@ export function PeopleList({ people, pagination, initialPersonType = "" }: { peo
       <span className="portal-label">Filtrar por tipo de pessoa</span>
       <select value={personType} onChange={(event) => {
         const value = event.target.value;
-        if (pagination) router.push(`?personType=${encodeURIComponent(value)}&q=${encodeURIComponent(pagination.search ?? "")}&page=1`);
+        if (pagination) {
+          const params = new URLSearchParams(window.location.search);
+          if (value) params.set("personType", value); else params.delete("personType");
+          params.set("page", "1");
+          router.push(`?${params}`);
+        }
         else setPersonType(value);
       }} className="portal-field mt-2 h-10 w-full px-3">
         <option value="">Todos os tipos</option>
         {PERSON_TYPE_OPTIONS.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
       </select>
     </label>
-    <DataList pagination={pagination} key={personType} records={records} itemLabel="pessoa" searchPlaceholder="Buscar nome, tipo ou contato" emptyDescription="Nenhuma pessoa encontrada para este filtro." columns={[
+    <DataList pagination={pagination} statusOptions={recordStatusOptions} selectedStatus={selectedStatus} key={personType} records={records} itemLabel="pessoa" searchPlaceholder="Buscar nome, tipo ou contato" emptyDescription="Nenhuma pessoa encontrada para este filtro." columns={[
       { key: "name", label: "Pessoa", primary: true },
       { key: "types", label: "Tipos" },
       { key: "document", label: "CPF", mono: true },

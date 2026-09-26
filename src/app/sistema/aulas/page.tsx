@@ -1,5 +1,6 @@
 import { relatedRecords } from "@/lib/api/related";
-import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
+import { lessonStatusOptions } from "@/lib/status-filters";
 import { accessibleLessonsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
@@ -44,7 +45,7 @@ export default async function LessonsPage({ searchParams }: ListPageProps) {
         description="Aulas organizadas por data, turma e próxima ação operacional."
         action={can(actor, "lessons:manage") ? <LessonCreator /> : undefined}
       />
-      <DataList key={page.page} pagination={paginationProps(page, query)}
+      <DataList key={page.page} pagination={paginationProps(page, query)} statusOptions={lessonStatusOptions} selectedStatus={queryValue(query.status) ?? ""}
         records={records}
         itemLabel="aula"
         searchPlaceholder="Buscar por aula, turma ou instrutor"

@@ -4,6 +4,8 @@ import { CohortCreator } from "@/components/portal/ResourceCreators";
 import { apiLabel, formatPeriod } from "@/lib/api/format";
 import { serverListPage } from "@/lib/api/pagination";
 import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { queryValue } from "@/lib/pagination";
+import { cohortStatusOptions } from "@/lib/status-filters";
 import type { Cohort } from "@/lib/api/domain-contracts";
 import { requireCapability } from "@/lib/auth/session";
 
@@ -26,7 +28,7 @@ export default async function CohortsPage({ searchParams }: ListPageProps) {
   return (
     <>
       <PageHeader eyebrow="Acadêmico" title="Turmas e matrículas" description="Período, agenda padrão e matrículas ativas de cada percurso formativo." action={<CohortCreator />} />
-      <DataList key={page.page} pagination={paginationProps(page, query)} records={records} itemLabel="turma" searchPlaceholder="Buscar código ou nome da turma" emptyDescription="Nenhuma turma foi cadastrada no backend." columns={[
+      <DataList key={page.page} pagination={paginationProps(page, query)} statusOptions={cohortStatusOptions} selectedStatus={queryValue(query.status) ?? ""} records={records} itemLabel="turma" searchPlaceholder="Buscar código ou nome da turma" emptyDescription="Nenhuma turma foi cadastrada no backend." columns={[
         { key: "name", label: "Turma", primary: true },
         { key: "code", label: "Código", mono: true },
         { key: "schedule", label: "Agenda padrão" },

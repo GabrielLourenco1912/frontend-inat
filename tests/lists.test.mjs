@@ -33,7 +33,28 @@ function load(relativePath) {
 
 const { ExpiredDocumentList } = load("components/portal/ExpiredDocumentList");
 const { ListPagination } = load("components/design-system/ListPagination");
+const { listRequestPath } = load("lib/api/list-query");
 const render = (component, props) => renderToStaticMarkup(createElement(component, props));
+
+test("status filters route through search even without text and retain other filters", () => {
+  const statusOnly = new URL(listRequestPath("/api/people?personType=LEARNER", { status: "INACTIVE", page: "3" }), "http://localhost");
+  assert.equal(statusOnly.pathname, "/api/search/people");
+  assert.equal(statusOnly.searchParams.get("personType"), "LEARNER");
+  assert.equal(statusOnly.searchParams.get("status"), "INACTIVE");
+  assert.equal(statusOnly.searchParams.get("q"), null);
+  assert.equal(statusOnly.searchParams.get("page"), "2");
+  assert.equal(statusOnly.searchParams.get("size"), "20");
+
+  const combined = new URL(listRequestPath("/api/contracts", { q: "Maria", status: "ACTIVE" }), "http://localhost");
+  assert.equal(combined.pathname, "/api/search/contracts");
+  assert.equal(combined.searchParams.get("q"), "Maria");
+  assert.equal(combined.searchParams.get("status"), "ACTIVE");
+
+  const contact = new URL(listRequestPath("/api/contact-messages", { q: "Ana", status: "NEW" }), "http://localhost");
+  assert.equal(contact.pathname, "/api/contact-messages");
+  assert.equal(contact.searchParams.get("search"), "Ana");
+  assert.equal(contact.searchParams.get("status"), "NEW");
+});
 
 test("expired documents use the standard list chevron and owner deep links", () => {
   const html = render(ExpiredDocumentList, {
@@ -109,6 +130,22 @@ test("empty filtered server pages retain navigation and backend totals", () => {
   assert.match(html, /Página 2 de 3/);
   assert.match(html, /Página anterior/);
   assert.match(html, /Próxima página/);
+});
+
+test("server status options remain available across pages and use backend totals", () => {
+  const { DataList } = load("components/design-system/DataList");
+  const html = render(DataList, {
+    records: [{ id: "1", name: "Pessoa ativa", state: "Ativo" }],
+    columns: [{ key: "name", label: "Nome", primary: true }, { key: "state", label: "Situação" }],
+    pagination: { page: 0, total: 31, totalPages: 2 },
+    statusOptions: [{ value: "ACTIVE", label: "Ativo" }, { value: "INACTIVE", label: "Inativo" }],
+    selectedStatus: "INACTIVE",
+  });
+  assert.match(html, /<option value="INACTIVE" selected="">Inativo<\/option>/);
+  assert.match(html, /Pessoa ativa/);
+  assert.match(html, /Mostrando 1 de 31/);
+  assert.match(html, /filtro de situação consultam todos os registros acessíveis/);
+  assert.doesNotMatch(html, /filtro de estado se aplica à página atual/);
 });
 
 test("local page controls emit the correct destinations", () => {

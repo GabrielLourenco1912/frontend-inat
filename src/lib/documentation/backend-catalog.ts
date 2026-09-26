@@ -153,8 +153,8 @@ export const apiGroups: ApiGroup[] = [
     endpoints: [
       endpoint("GET", "/api/me", "Obter o contexto do usuário atual", "authenticated", "CurrentUserContextResponse"),
       endpoint("GET", "/api/search/{resource}", "Pesquisar recursos do portal", "authenticated", "PageResponse<Object>", {
-        parameters: ["q — texto, até 160 caracteres", ...pagination, "personType — filtro opcional"],
-        note: "O serviço aplica o escopo permitido ao ator para cada resource.",
+        parameters: ["q — texto, até 160 caracteres", ...pagination, "personType — filtro opcional para pessoas", "status — filtro opcional por código de situação, até 32 caracteres"],
+        note: "O serviço aplica o escopo permitido ao ator para cada resource. O filtro status aceita os valores do enum do recurso em people, learners, organizations, contracts, cohorts, lessons, activities e users.",
       }),
       endpoint("GET", "/api/lookups/{resource}", "Buscar opções para campos de seleção", "authenticated", "PageResponse<Object>", {
         parameters: [

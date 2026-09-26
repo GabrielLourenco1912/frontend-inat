@@ -1,5 +1,6 @@
 import { relatedRecords } from "@/lib/api/related";
-import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
+import { recordStatusOptions } from "@/lib/status-filters";
 import { accessibleLearnersPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
@@ -73,7 +74,7 @@ export default async function LearnersPage({ searchParams }: ListPageProps) {
         description={hasRole(actor, "EMPLOYER_MANAGER") ? "Aprendizes com contrato ativo ou histórico autorizado na sua organização." : "Matrícula, escolaridade, turma e situação acadêmica em uma visão contextual."}
         action={can(actor, "learners:manage") ? <LearnerOnboardingCreator /> : undefined}
       />
-      <DataList key={page.page} pagination={paginationProps(page, query)}
+      <DataList key={page.page} pagination={paginationProps(page, query)} statusOptions={recordStatusOptions} selectedStatus={queryValue(query.status) ?? ""}
         records={records}
         itemLabel="aprendiz"
         searchPlaceholder="Buscar por nome ou matrícula"

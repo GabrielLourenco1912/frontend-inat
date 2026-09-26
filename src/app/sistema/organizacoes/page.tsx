@@ -1,4 +1,5 @@
-import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
+import { recordStatusOptions } from "@/lib/status-filters";
 import { accessibleOrganizationsPage } from "@/lib/portal/pagination";
 import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
@@ -25,7 +26,7 @@ export default async function OrganizationsPage({ searchParams }: ListPageProps)
   return (
     <>
       <PageHeader eyebrow="Parcerias" title="Organizações" description="Empresas e escolas parceiras, com vínculos e contratos relacionados." action={can(actor, "organizations:manage") ? <OrganizationCreator /> : undefined} />
-      <DataList key={page.page} pagination={paginationProps(page, query)}
+      <DataList key={page.page} pagination={paginationProps(page, query)} statusOptions={recordStatusOptions} selectedStatus={queryValue(query.status) ?? ""}
         records={records}
         itemLabel="organização"
         searchPlaceholder="Buscar organização, CNPJ ou cidade"

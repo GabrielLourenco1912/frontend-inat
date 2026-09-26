@@ -7,7 +7,7 @@ import { accessibleActivities, accessibleContracts, accessibleLearners, accessib
 import type { Activity, Contract, Learner, Lesson, Organization } from "@/lib/api/domain-contracts";
 
 async function accessiblePage<T>(actor: Actor, path: string, query: ListQuery, fallback: () => Promise<T[]>) {
-  if (hasRole(actor, "ADMIN") || queryValue(query.q)?.trim()) return serverListPage<T>(path, query);
+  if (hasRole(actor, "ADMIN") || queryValue(query.q)?.trim() || queryValue(query.status)?.trim()) return serverListPage<T>(path, query);
   // Scoped endpoints do not accept page/size. Keep their authorization boundary.
   return paginateItems(await fallback(), pageIndex(query.page));
 }

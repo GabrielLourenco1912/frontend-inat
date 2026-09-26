@@ -4,7 +4,8 @@ import type { ContactMessage } from "@/lib/api/domain-contracts";
 import { apiLabel, formatDateTime } from "@/lib/api/format";
 import { serverListPage } from "@/lib/api/pagination";
 import { requireCapability } from "@/lib/auth/session";
-import { paginationProps, type ListPageProps } from "@/lib/pagination";
+import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
+import { contactMessageStatusOptions } from "@/lib/status-filters";
 
 export default async function ContactMessagesPage({ searchParams }: ListPageProps) {
   await requireCapability("administration:read");
@@ -30,6 +31,8 @@ export default async function ContactMessagesPage({ searchParams }: ListPageProp
       <DataList
         key={`${page.page}:${paginationProps(page, query).search}`}
         pagination={paginationProps(page, query)}
+        statusOptions={contactMessageStatusOptions}
+        selectedStatus={queryValue(query.status) ?? ""}
         records={records}
         itemLabel="mensagem"
         searchPlaceholder="Buscar nome, e-mail ou conteúdo"

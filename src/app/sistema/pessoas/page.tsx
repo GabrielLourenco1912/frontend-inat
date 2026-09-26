@@ -16,7 +16,7 @@ export default async function PeoplePage({ searchParams }: ListPageProps) {
   return (
     <>
       <PageHeader eyebrow="Cadastros base" title="Pessoas e responsáveis" description="Dados pessoais aparecem mascarados na listagem e são abertos somente no contexto necessário." action={<PersonCreator />} />
-      <PeopleList initialPersonType={personType} key={`${personType}:${page.page}`} pagination={paginationProps(page, query)} people={people} />
+      <PeopleList initialPersonType={personType} selectedStatus={queryValue(query.status) ?? ""} key={`${personType}:${page.page}`} pagination={paginationProps(page, query)} people={people} />
     </>
   );
 }
