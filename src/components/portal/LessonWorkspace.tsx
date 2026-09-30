@@ -4,7 +4,8 @@ import { ActivityCreator } from "@/components/portal/ActivityCreator";
 import { SearchSelect } from "@/components/design-system/SearchSelect";
 
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
-import Link from "next/link";
+import { DetailList } from "@/components/design-system/DetailList";
+import { DetailLinksList } from "@/components/design-system/DetailLinksList";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { Icon } from "@/components/design-system/Icon";
@@ -1023,42 +1024,18 @@ export function LessonWorkspace({
               {rosterMessage}
             </p>
           ) : null}
-          {participants.length ? (
-            <div className="divide-y divide-[var(--inat-line)]">
-              <PaginatedContent>
-              {participants.map((participant) => (
-                <div
-                  key={participant.id}
-                  className="flex items-center justify-between gap-4 p-4 sm:px-5"
-                >
-                  <div>
-                    <p className="font-mono text-xs font-semibold">
-                      Aprendiz {participant.learnerId}
-                    </p>
-                    <p className="mt-1 text-xs text-[var(--inat-muted)]">
-                      {participant.assignmentReason ||
-                        "Sem observação de atribuição"}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <StatusMark>{apiLabel(participant.participationType)}</StatusMark>
-                    <StatusMark>{apiLabel(participant.status)}</StatusMark>
-                  </div>
-                </div>
-              ))}
-              </PaginatedContent>
-            </div>
-          ) : (
-            <EmptyState
-              title="Nenhum participante"
-              description={
-                participantsMutable
-                  ? "Gere a lista a partir das matrículas ou inclua uma participação."
-                  : "A aula foi encerrada sem participantes registrados."
-              }
-              icon="people"
-            />
-          )}
+          <DetailList items={participants} itemLabel="participante" itemPlural="participantes" searchPlaceholder="Buscar aprendiz ou observação"
+            searchText={(participant) => `${participant.learnerId} ${participant.assignmentReason ?? ""} ${apiLabel(participant.participationType)}`}
+            statusOf={(participant) => participant.status}
+            emptyTitle="Nenhum participante"
+            emptyDescription={participantsMutable ? "Gere a lista a partir das matrículas ou inclua uma participação." : "A aula foi encerrada sem participantes registrados."}
+            emptyIcon="people"
+            renderItem={(participant) => <div key={participant.id} className="flex items-center justify-between gap-4 p-4 sm:px-5">
+              <div><p className="font-mono text-xs font-semibold">Aprendiz {participant.learnerId}</p>
+                <p className="mt-1 text-xs text-[var(--inat-muted)]">{participant.assignmentReason || "Sem observação de atribuição"}</p></div>
+              <div className="flex flex-wrap justify-end gap-2"><StatusMark>{apiLabel(participant.participationType)}</StatusMark><StatusMark>{apiLabel(participant.status)}</StatusMark></div>
+            </div>}
+          />
         </Sheet>
       ) : null}
 
@@ -1079,37 +1056,12 @@ export function LessonWorkspace({
               </RestrictionNotice>
             </div>
           ) : null}
-          {activities.length ? (
-            <div className="divide-y divide-[var(--inat-line)]">
-              <PaginatedContent>
-              {activities.map((activity) => (
-                <Link
-                  key={activity.id}
-                  href={`/sistema/atividades/${activity.id}`}
-                  className="flex items-center justify-between gap-4 p-4 hover:bg-[var(--inat-mist)]/35 sm:px-5"
-                >
-                  <div>
-                    <p className="text-sm font-semibold">{activity.title}</p>
-                    <p className="mt-1 text-xs text-[var(--inat-muted)]">
-                      Prazo {formatDateTime(activity.dueAt)}
-                    </p>
-                  </div>
-                  <StatusMark>{apiLabel(activity.status)}</StatusMark>
-                </Link>
-              ))}
-              </PaginatedContent>
-            </div>
-          ) : (
-            <EmptyState
-              title="Nenhuma atividade"
-              description={
-                lesson.status === "CANCELLED"
-                  ? "Aulas canceladas não aceitam novas atividades."
-                  : "Esta aula ainda não possui atividades no backend."
-              }
-              icon="clipboard"
-            />
-          )}
+          <DetailLinksList items={activities.map((activity) => ({ id: activity.id, href: `/sistema/atividades/${activity.id}`, title: activity.title,
+            description: `Prazo ${formatDateTime(activity.dueAt)}`, status: activity.status }))}
+            itemLabel="atividade" itemPlural="atividades" searchPlaceholder="Buscar atividade ou prazo"
+            emptyTitle="Nenhuma atividade"
+            emptyDescription={lesson.status === "CANCELLED" ? "Aulas canceladas não aceitam novas atividades." : "Esta aula ainda não possui atividades no backend."}
+            emptyIcon="clipboard" />
         </Sheet>
       ) : null}
 

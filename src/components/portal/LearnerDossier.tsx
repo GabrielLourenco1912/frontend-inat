@@ -1,9 +1,8 @@
 "use client";
 
 import { AttendanceExportButton } from "@/components/portal/AttendanceExportButton";
-import { PaginatedContent } from "@/components/design-system/ClientPagination";
+import { DetailLinksList } from "@/components/design-system/DetailLinksList";
 import type { Pagination } from "@/lib/pagination";
-import Link from "next/link";
 import { DetailTabs } from "@/components/portal/DetailTabs";
 import { PersonDocumentManager } from "@/components/portal/PersonDocumentManager";
 import { LearnerEditor } from "@/components/portal/EntityEditors";
@@ -77,10 +76,6 @@ type Props = {
   canExportAttendance?: boolean;
 };
 
-function EmptyPanel({ title, description, icon }: { title: string; description: string; icon: "people" | "briefcase" | "layers" | "calendar" | "clipboard" | "document" }) {
-  return <EmptyState title={title} description={description} icon={icon} />;
-}
-
 export function LearnerDossier(props: Props) {
   const {
     learner, person, displayName, contracts, organizations, guardians, guardianPeople,
@@ -151,13 +146,29 @@ export function LearnerDossier(props: Props) {
 
         {tab === "responsaveis" && canSeeGuardians ? <LearnerGuardianManager learner={learner} guardians={guardians} people={guardianPeople} canManage={canManage} /> : null}
 
-        {tab === "contrato" && canSeeSensitiveContract ? <Sheet><SectionHeading title="Contratos de aprendizagem" icon="briefcase" />{contracts.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{contracts.map((contract) => <Link key={contract.id} href={`/sistema/contratos/${contract.id}`} className="grid gap-3 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5"><div><p className="text-sm font-semibold">{organizationMap.get(contract.employerId) ?? contract.employerId}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatPeriod(contract.startDate, contract.endDate)} · {formatMinutes(contract.weeklyWorkloadMinutes)} · {formatCurrency(contract.monthlySalary)}</p></div><StatusMark>{apiLabel(contract.status)}</StatusMark></Link>)}</PaginatedContent></div> : <EmptyPanel title="Nenhum contrato acessível" description="Não há contrato retornado para este aprendiz e perfil." icon="briefcase" />}</Sheet> : null}
+        {tab === "contrato" && canSeeSensitiveContract ? <Sheet><SectionHeading title="Contratos de aprendizagem" icon="briefcase" /><DetailLinksList
+          items={contracts.map((contract) => ({ id: contract.id, href: `/sistema/contratos/${contract.id}`, title: organizationMap.get(contract.employerId) ?? contract.employerId,
+            description: `${formatPeriod(contract.startDate, contract.endDate)} · ${formatMinutes(contract.weeklyWorkloadMinutes)} · ${formatCurrency(contract.monthlySalary)}`, status: contract.status }))}
+          itemLabel="contrato" itemPlural="contratos" searchPlaceholder="Buscar empresa ou período"
+          emptyTitle="Nenhum contrato acessível" emptyDescription="Não há contrato retornado para este aprendiz e perfil." emptyIcon="briefcase" /></Sheet> : null}
 
-        {tab === "turmas" ? <Sheet><SectionHeading title="Histórico de matrículas" icon="layers" />{enrollments.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{enrollments.map((enrollment) => { const cohort = cohortMap.get(enrollment.cohortId); return <Link key={enrollment.id} href={`/sistema/turmas/${enrollment.cohortId}`} className="flex items-center justify-between gap-4 p-4 hover:bg-[var(--inat-mist)]/35 sm:p-5"><div><p className="font-mono text-xs font-bold">{cohort?.code ?? enrollment.cohortId}</p><p className="mt-1 text-sm font-semibold">{cohort?.name ?? "Turma"}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatPeriod(enrollment.startDate, enrollment.endDate)}</p></div><StatusMark>{apiLabel(enrollment.status)}</StatusMark></Link>; })}</PaginatedContent></div> : <EmptyPanel title="Sem matrículas visíveis" description="O backend só expõe a listagem consolidada de matrículas à administração." icon="layers" />}</Sheet> : null}
+        {tab === "turmas" ? <Sheet><SectionHeading title="Histórico de matrículas" icon="layers" /><DetailLinksList
+          items={enrollments.map((enrollment) => { const cohort = cohortMap.get(enrollment.cohortId); return { id: enrollment.id, href: `/sistema/turmas/${enrollment.cohortId}`,
+            title: `${cohort?.code ?? enrollment.cohortId} · ${cohort?.name ?? "Turma"}`, description: formatPeriod(enrollment.startDate, enrollment.endDate), status: enrollment.status }; })}
+          itemLabel="matrícula" itemPlural="matrículas" searchPlaceholder="Buscar código ou nome da turma"
+          emptyTitle="Sem matrículas visíveis" emptyDescription="O backend só expõe a listagem consolidada de matrículas à administração." emptyIcon="layers" /></Sheet> : null}
 
-        {tab === "frequencia" ? <Sheet><SectionHeading title="Aulas e frequência" description={attendance.length ? `${attendance.length} registro(s) de presença disponíveis` : "Sem frequência consolidada disponível para este perfil"} icon="calendar" stackOnMobile action={props.canExportAttendance ? <AttendanceExportButton scope="learners" id={learner.id} /> : undefined} />{lessons.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{lessons.map((lesson) => { const record = attendanceMap.get(lesson.id); return <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="grid gap-3 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5"><div><p className="text-sm font-semibold">{lesson.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)} · {apiLabel(lesson.deliveryMode)}</p></div><StatusMark>{record ? apiLabel(record.status) : apiLabel(lesson.status)}</StatusMark></Link>; })}</PaginatedContent></div> : <EmptyPanel title="Nenhuma aula acessível" description="Não há aulas deste aprendiz disponíveis para o perfil atual." icon="calendar" />}</Sheet> : null}
+        {tab === "frequencia" ? <Sheet><SectionHeading title="Aulas e frequência" description={attendance.length ? `${attendance.length} registro(s) de presença disponíveis` : "Sem frequência consolidada disponível para este perfil"} icon="calendar" stackOnMobile action={props.canExportAttendance ? <AttendanceExportButton scope="learners" id={learner.id} /> : undefined} /><DetailLinksList
+          items={lessons.map((lesson) => { const record = attendanceMap.get(lesson.id); return { id: lesson.id, href: `/sistema/aulas/${lesson.id}`, title: lesson.title,
+            description: `${formatDateTime(lesson.startsAt)} · ${apiLabel(lesson.deliveryMode)}`, status: record?.status ?? lesson.status }; })}
+          itemLabel="aula" itemPlural="aulas" searchPlaceholder="Buscar aula ou modalidade"
+          emptyTitle="Nenhuma aula acessível" emptyDescription="Não há aulas deste aprendiz disponíveis para o perfil atual." emptyIcon="calendar" /></Sheet> : null}
 
-        {tab === "atividades" ? <Sheet><SectionHeading title="Atividades e entregas" icon="clipboard" />{activities.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{activities.map((activity) => { const submission = submissionMap.get(activity.id); const lesson = lessonMap.get(activity.lessonId); return <Link key={activity.id} href={`/sistema/atividades/${activity.id}`} className="flex items-center gap-4 p-4 hover:bg-[var(--inat-mist)]/35 sm:p-5"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{activity.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{lesson?.title ?? activity.lessonId} · prazo {formatDateTime(activity.dueAt)}</p></div><StatusMark>{submission ? apiLabel(submission.status) : "Sem entrega"}</StatusMark></Link>; })}</PaginatedContent></div> : <EmptyPanel title="Nenhuma atividade acessível" description="Não há atividades relacionadas às aulas disponíveis." icon="clipboard" />}</Sheet> : null}
+        {tab === "atividades" ? <Sheet><SectionHeading title="Atividades e entregas" icon="clipboard" /><DetailLinksList
+          items={activities.map((activity) => { const submission = submissionMap.get(activity.id); const lesson = lessonMap.get(activity.lessonId); return { id: activity.id, href: `/sistema/atividades/${activity.id}`,
+            title: activity.title, description: `${lesson?.title ?? activity.lessonId} · prazo ${formatDateTime(activity.dueAt)}`, status: submission?.status ?? "Sem entrega" }; })}
+          itemLabel="atividade" itemPlural="atividades" searchPlaceholder="Buscar atividade ou aula"
+          emptyTitle="Nenhuma atividade acessível" emptyDescription="Não há atividades relacionadas às aulas disponíveis." emptyIcon="clipboard" /></Sheet> : null}
 
         {tab === "documentos" && canSeeDocuments ? person ? <PersonDocumentManager key={`${person.id}:${props.documentPagination?.page}:${initialDocumentId ?? ""}`} person={person} documents={documents} pagination={props.documentPagination} focusedDocument={props.focusedDocument} documentTypes={documentTypes} initialDocumentId={initialDocumentId} /> : <Sheet><EmptyState title="Cadastro da pessoa indisponível" description="Não foi possível carregar a pessoa vinculada a este aprendiz." icon="person" /></Sheet> : null}
       </div>

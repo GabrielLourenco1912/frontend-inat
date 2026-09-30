@@ -2,7 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { ContactTypeSelect } from "@/components/landing/ContactTypeSelect";
+import { MaskedInput } from "@/components/design-system/MaskedInput";
 import { ApiRequestError, postJson } from "@/lib/api/client";
+import { phoneDigits } from "@/lib/inputs/masks";
 import type {
   ContactMessage,
   ContactMessageType,
@@ -24,7 +26,7 @@ export function Contact() {
     const body = {
       name: String(fields.get("name") ?? "").trim(),
       email: String(fields.get("email") ?? "").trim(),
-      phone: String(fields.get("phone") ?? "").trim() || null,
+      phone: phoneDigits(String(fields.get("phone") ?? "")) || null,
       contactType: String(fields.get("contactType")) as ContactMessageType,
       message: String(fields.get("message") ?? "").trim(),
     };
@@ -110,11 +112,10 @@ export function Contact() {
                 >
                   Telefone/WhatsApp
                 </label>
-                <input
+                <MaskedInput
                   id="phone"
                   name="phone"
-                  type="tel"
-                  maxLength={30}
+                  mask="phone"
                   autoComplete="tel"
                   className="field mt-2 w-full px-4"
                 />

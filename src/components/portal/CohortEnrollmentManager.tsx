@@ -2,12 +2,12 @@
 
 import { SearchSelect } from "@/components/design-system/SearchSelect";
 
-import { PaginatedContent } from "@/components/design-system/ClientPagination";
+import { DetailList } from "@/components/design-system/DetailList";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Icon } from "@/components/design-system/Icon";
-import { EmptyState, SectionHeading, Sheet, StatusMark } from "@/components/design-system/PortalPrimitives";
+import { SectionHeading, Sheet, StatusMark } from "@/components/design-system/PortalPrimitives";
 import { deleteResource, postJson, putJson, requestErrorMessage } from "@/lib/api/client";
 import type {
   Cohort,
@@ -127,7 +127,11 @@ export function CohortEnrollmentManager({
         <span>{cohort.maxLearners == null ? "Sem limite definido" : `Capacidade: ${cohort.maxLearners}`}</span>
       </div>
       {error ? <p role="alert" className="m-4 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
-      {enrollments.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{enrollments.map((enrollment) => {
+      <DetailList items={enrollments} itemLabel="matrícula" itemPlural="matrículas" searchPlaceholder="Buscar aprendiz, empresa ou contrato"
+        searchText={(enrollment) => `${contractMap.get(enrollment.contractId)?.label ?? ""} ${enrollment.contractId} ${enrollment.learnerId}`}
+        statusOf={(enrollment) => enrollment.status}
+        emptyTitle="Nenhuma matrícula" emptyDescription="Nenhum contrato foi matriculado nesta turma." emptyIcon="graduation"
+        renderItem={(enrollment) => {
         const option = contractMap.get(enrollment.contractId);
         const contract = option?.contract;
         const canActivate = enrollment.status === "PENDING"
@@ -151,7 +155,7 @@ export function CohortEnrollmentManager({
             {enrollment.status === "PENDING" ? <button type="button" disabled={saving} onClick={() => void remove(enrollment)} className="portal-button portal-button-quiet h-9 text-rose-700" aria-label="Excluir matrícula pendente"><Icon name="trash" className="size-4" /></button> : null}
           </div>
         </div>;
-      })}</PaginatedContent></div> : <EmptyState title="Nenhuma matrícula" description="Nenhum contrato foi matriculado nesta turma." icon="graduation" />}
+      }} />
     </Sheet>
 
     {open ? <div className="fixed inset-0 z-[100] grid place-items-center bg-[var(--inat-ink)]/70 p-4" role="dialog" aria-modal="true"><form onSubmit={submit} className="w-full max-w-lg border border-[var(--inat-line)] bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Matricular contrato</h2><button type="button" onClick={() => setOpen(false)} aria-label="Fechar" className="text-xl">×</button></div>{error ? <p role="alert" className="mt-4 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}<p className="mt-4 border-l-[3px] border-[var(--inat-teal)] bg-[var(--inat-mist)] p-3 text-sm leading-6">A matrícula será criada como pendente e poderá ser ativada quando contrato, turma e período estiverem ativos.</p><div className="mt-5 grid gap-4"><label><span className="portal-label">Contrato / aprendiz</span><SearchSelect name="contractId" label="Contrato ou aprendiz" endpoint="/api/backend/lookups/contracts?purpose=enrollment" required /></label><label><span className="portal-label">Data inicial</span><input name="startDate" type="date" min={cohort.startDate} max={cohort.endDate ?? undefined} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Data final (opcional)</span><input name="endDate" type="date" min={cohort.startDate} max={cohort.endDate ?? undefined} className="portal-field mt-2 h-10 w-full px-3" /></label></div><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setOpen(false)} className="portal-button portal-button-secondary">Cancelar</button><button type="submit" disabled={saving || !canCreate} className="portal-button portal-button-primary">{saving ? "Matriculando..." : "Matricular como pendente"}</button></div></form></div> : null}

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { SearchSelect } from "@/components/design-system/SearchSelect";
+import { MaskedInput } from "@/components/design-system/MaskedInput";
+import { digitsOnly, phoneDigits, parseSalary } from "@/lib/inputs/masks";
 import { OrganizationTypeFields } from "@/components/portal/OrganizationTypeFields";
 import { Icon } from "@/components/design-system/Icon";
 import { putJson, requestErrorMessage } from "@/lib/api/client";
@@ -52,31 +54,31 @@ export function LearnerEditor({ learner }: { learner: Learner }) {
 function AddressInputs({ organization }: { organization: Organization }) {
   const address = organization.address;
   return <fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Endereço</legend>
-    <label><span className="portal-label">CEP</span><input name="postalCode" defaultValue={address.postalCode} inputMode="numeric" pattern="[0-9]{8}" required className="portal-field mt-2 h-10 w-full px-3" /></label>
+    <label><span className="portal-label">CEP</span><MaskedInput name="postalCode" mask="postalCode" defaultValue={address.postalCode} required className="portal-field mt-2 h-10 w-full px-3" /></label>
     <label><span className="portal-label">Logradouro</span><input name="street" defaultValue={address.street} required className="portal-field mt-2 h-10 w-full px-3" /></label>
     <label><span className="portal-label">Número</span><input name="streetNumber" defaultValue={address.streetNumber} required className="portal-field mt-2 h-10 w-full px-3" /></label>
     <label><span className="portal-label">Complemento</span><input name="addressLine2" defaultValue={address.addressLine2 ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
     <label><span className="portal-label">Bairro</span><input name="district" defaultValue={address.district} required className="portal-field mt-2 h-10 w-full px-3" /></label>
     <label><span className="portal-label">Cidade</span><input name="city" defaultValue={address.city} required className="portal-field mt-2 h-10 w-full px-3" /></label>
-    <label><span className="portal-label">UF</span><input name="stateCode" defaultValue={address.stateCode} pattern="[A-Za-z]{2}" maxLength={2} required className="portal-field mt-2 h-10 w-full px-3 uppercase" /></label>
-    <label><span className="portal-label">País</span><input name="countryCode" defaultValue={address.countryCode} pattern="[A-Za-z]{2}" maxLength={2} required className="portal-field mt-2 h-10 w-full px-3 uppercase" /></label>
+    <label><span className="portal-label">UF</span><input name="stateCode" defaultValue={address.stateCode || "PR"} pattern="[A-Za-z]{2}" maxLength={2} required className="portal-field mt-2 h-10 w-full px-3 uppercase" /></label>
+    <label><span className="portal-label">País</span><input name="countryCode" defaultValue={address.countryCode || "BR"} pattern="[A-Za-z]{2}" maxLength={2} required className="portal-field mt-2 h-10 w-full px-3 uppercase" /></label>
   </fieldset>;
 }
 
 export function OrganizationEditor({ organization, hasContracts, requiredTypes }: { organization: Organization; hasContracts: boolean; requiredTypes: OrganizationType[] }) {
   return <EditorModal title="Editar organização">{(close) => <EditForm close={close} endpoint={`/api/backend/organizations/${encodeURIComponent(organization.id)}`} build={(form) => ({
     parentOrganizationId: String(form.get("parentOrganizationId") ?? "") || null,
-    address: { postalCode: String(form.get("postalCode") ?? "").replace(/\D/g, ""), street: String(form.get("street") ?? "").trim(), streetNumber: String(form.get("streetNumber") ?? "").trim(), addressLine2: String(form.get("addressLine2") ?? "").trim() || null, district: String(form.get("district") ?? "").trim(), city: String(form.get("city") ?? "").trim(), stateCode: String(form.get("stateCode") ?? "").toUpperCase(), countryCode: String(form.get("countryCode") ?? "BR").toUpperCase() },
-    organizationTypes: form.getAll("organizationTypes").map(String), legalName: String(form.get("legalName") ?? "").trim(), tradeName: String(form.get("tradeName") ?? "").trim() || null, taxId: String(form.get("taxId") ?? "").replace(/\D/g, ""), contactEmail: String(form.get("contactEmail") ?? "").trim(), phoneNumber: String(form.get("phoneNumber") ?? "").trim(), attendanceClosingDay: form.get("attendanceClosingDay") ? Number(form.get("attendanceClosingDay")) : null, status: String(form.get("status")),
+    address: { postalCode: digitsOnly(String(form.get("postalCode") ?? "")), street: String(form.get("street") ?? "").trim(), streetNumber: String(form.get("streetNumber") ?? "").trim(), addressLine2: String(form.get("addressLine2") ?? "").trim() || null, district: String(form.get("district") ?? "").trim(), city: String(form.get("city") ?? "").trim(), stateCode: String(form.get("stateCode") ?? "").toUpperCase(), countryCode: String(form.get("countryCode") ?? "BR").toUpperCase() },
+    organizationTypes: form.getAll("organizationTypes").map(String), legalName: String(form.get("legalName") ?? "").trim(), tradeName: String(form.get("tradeName") ?? "").trim() || null, taxId: digitsOnly(String(form.get("taxId") ?? "")), contactEmail: String(form.get("contactEmail") ?? "").trim(), phoneNumber: phoneDigits(String(form.get("phoneNumber") ?? "")), attendanceClosingDay: form.get("attendanceClosingDay") ? Number(form.get("attendanceClosingDay")) : null, status: String(form.get("status")),
   })}>
     <div className="grid gap-4 sm:grid-cols-2">
       <OrganizationTypeFields types={organization.organizationTypes} requiredTypes={requiredTypes} />
       <label><span className="portal-label">Situação</span><select name="status" defaultValue={organization.status} className="portal-field mt-2 h-10 w-full px-3"><option value="ACTIVE">Ativa</option><option value="INACTIVE">Inativa</option><option value="SUSPENDED">Suspensa</option></select></label>
       <label className="sm:col-span-2"><span className="portal-label">Razão social</span><input name="legalName" defaultValue={organization.legalName} required className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label><span className="portal-label">Nome fantasia</span><input name="tradeName" defaultValue={organization.tradeName ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
-      <label><span className="portal-label">CNPJ</span><input name="taxId" defaultValue={organization.taxId} disabled={hasContracts} pattern="[0-9]{14}" required className="portal-field mt-2 h-10 w-full px-3 disabled:bg-[var(--inat-paper)]" />{hasContracts ? <input type="hidden" name="taxId" value={organization.taxId} /> : null}</label>
+      <label><span className="portal-label">CNPJ</span><MaskedInput name="taxId" mask="cnpj" defaultValue={organization.taxId} disabled={hasContracts} required className="portal-field mt-2 h-10 w-full px-3 disabled:bg-[var(--inat-paper)]" />{hasContracts ? <input type="hidden" name="taxId" value={organization.taxId} /> : null}</label>
       <label><span className="portal-label">E-mail</span><input name="contactEmail" defaultValue={organization.contactEmail} type="email" required className="portal-field mt-2 h-10 w-full px-3" /></label>
-      <label><span className="portal-label">Telefone</span><input name="phoneNumber" defaultValue={organization.phoneNumber} required className="portal-field mt-2 h-10 w-full px-3" /></label>
+      <label><span className="portal-label">Telefone</span><MaskedInput name="phoneNumber" mask="phone" defaultValue={organization.phoneNumber} required className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label><span className="portal-label">Fechamento de ponto</span><input name="attendanceClosingDay" defaultValue={organization.attendanceClosingDay ?? ""} type="number" min="1" max="31" className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label className="sm:col-span-2"><span className="portal-label">Organização superior</span><SearchSelect name="parentOrganizationId" label="Organização superior" endpoint={`/api/backend/lookups/organizations?purpose=parent&excludeId=${encodeURIComponent(organization.id)}`} initialOption={organization.parentOrganizationId ? { id: organization.parentOrganizationId, label: organization.parentOrganizationId } : undefined} /></label>
       {hasContracts ? <p className="text-xs text-[var(--inat-muted)] sm:col-span-2">CNPJ e tipos usados em contratos ficam preservados. Você pode adicionar outro tipo.</p> : null}
@@ -89,7 +91,7 @@ export function ContractEditor({ contract, learnerName, organizationNames }: { c
   if (contract.status === "ENDED" || contract.status === "CANCELLED") return null;
   const draft = contract.status === "DRAFT";
   return <EditorModal title="Editar contrato">{(close) => <EditForm close={close} endpoint={`/api/backend/contracts/${encodeURIComponent(contract.id)}`} build={(form) => ({
-    learnerId: String(form.get("learnerId")), employerId: String(form.get("employerId")), schoolId: String(form.get("schoolId") ?? "") || null, startDate: String(form.get("startDate")), endDate: String(form.get("endDate") ?? "") || null, monthlySalary: Number(String(form.get("monthlySalary") ?? "").replace(",", ".")), weeklyWorkloadMinutes: Math.round(Number(form.get("weeklyWorkloadHours")) * 60), status: contract.status, statusReason: null,
+    learnerId: String(form.get("learnerId")), employerId: String(form.get("employerId")), schoolId: String(form.get("schoolId") ?? "") || null, startDate: String(form.get("startDate")), endDate: String(form.get("endDate") ?? "") || null, monthlySalary: parseSalary(String(form.get("monthlySalary") ?? "")), weeklyWorkloadMinutes: Math.round(Number(form.get("weeklyWorkloadHours")) * 60), status: contract.status, statusReason: null,
   })}>
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="sm:col-span-2"><span className="portal-label">Aprendiz</span><SearchSelect name="learnerId" label="Aprendiz" endpoint="/api/backend/lookups/learners?purpose=contract-learner" required disabled={!draft} initialOption={{ id: contract.learnerId, label: learnerName }} />{!draft ? <input type="hidden" name="learnerId" value={contract.learnerId} /> : null}</label>
@@ -97,7 +99,7 @@ export function ContractEditor({ contract, learnerName, organizationNames }: { c
       <label><span className="portal-label">Escola</span><SearchSelect name="schoolId" label="Escola" endpoint="/api/backend/lookups/organizations?purpose=school" initialOption={contract.schoolId ? { id: contract.schoolId, label: organizationNames[contract.schoolId] ?? contract.schoolId } : undefined} /></label>
       <label><span className="portal-label">Início</span><input name="startDate" type="date" defaultValue={contract.startDate} disabled={!draft} required className="portal-field mt-2 h-10 w-full px-3 disabled:bg-[var(--inat-paper)]" />{!draft ? <input type="hidden" name="startDate" value={contract.startDate} /> : null}</label>
       <label><span className="portal-label">Término</span><input name="endDate" type="date" defaultValue={contract.endDate ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
-      <label><span className="portal-label">Salário mensal</span><input name="monthlySalary" inputMode="decimal" defaultValue={contract.monthlySalary} required className="portal-field mt-2 h-10 w-full px-3" /></label>
+      <label><span className="portal-label">Salário mensal</span><MaskedInput name="monthlySalary" mask="salary" defaultValue={contract.monthlySalary} required className="portal-field mt-2 h-10 w-full px-3" /></label>
       <label><span className="portal-label">Carga semanal (horas)</span><input name="weeklyWorkloadHours" type="number" min="1" max="168" step="0.5" defaultValue={contract.weeklyWorkloadMinutes / 60} required className="portal-field mt-2 h-10 w-full px-3" /></label>
       <p className="text-xs leading-5 text-[var(--inat-muted)] sm:col-span-2">A escola pode ser alterada durante a vigência e cada troca é registrada. Para aprendizes menores sem ensino médio concluído, ela continua obrigatória.</p>
     </div>

@@ -1,12 +1,11 @@
 import { relatedRecords } from "@/lib/api/related";
-import { PaginatedContent } from "@/components/design-system/ClientPagination";
+import { DetailLinksList } from "@/components/design-system/DetailLinksList";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CohortEnrollmentManager } from "@/components/portal/CohortEnrollmentManager";
 import { CohortLifecycleManager } from "@/components/portal/LifecycleManagers";
 import {
   DefinitionList,
-  EmptyState,
   PageHeader,
   SectionHeading,
   Sheet,
@@ -97,7 +96,10 @@ export default async function CohortDetailPage({
         </Sheet>
         <Sheet>
           <SectionHeading title="Aulas" icon="calendar" action={<Link href="/sistema/agenda" className="text-xs font-semibold text-[var(--inat-teal-dark)]">Abrir agenda</Link>} />
-          {lessons.length ? <div className="divide-y divide-[var(--inat-line)]"><PaginatedContent>{lessons.map((lesson) => <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="grid gap-2 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"><div><p className="text-sm font-semibold">{lesson.title}</p><p className="mt-1 text-xs text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)} · {apiLabel(lesson.deliveryMode)}</p></div><StatusMark>{apiLabel(lesson.status)}</StatusMark></Link>)}</PaginatedContent></div> : <EmptyState title="Nenhuma aula planejada" description="Esta turma ainda não possui aulas no backend." icon="calendar" />}
+          <DetailLinksList items={lessons.map((lesson) => ({ id: lesson.id, href: `/sistema/aulas/${lesson.id}`, title: lesson.title,
+            description: `${formatDateTime(lesson.startsAt)} · ${apiLabel(lesson.deliveryMode)}`, status: lesson.status }))}
+            itemLabel="aula" itemPlural="aulas" searchPlaceholder="Buscar aula ou modalidade"
+            emptyTitle="Nenhuma aula planejada" emptyDescription="Esta turma ainda não possui aulas no backend." emptyIcon="calendar" />
         </Sheet>
       </div>
       <div className="mt-5"><CohortLifecycleManager cohort={cohort} today={today} hasOpenLessons={lessons.some((lesson) => lesson.status === "SCHEDULED" || lesson.status === "IN_PROGRESS")} reservedCount={enrollments.filter((enrollment) => enrollment.status === "PENDING" || enrollment.status === "ACTIVE").length} /></div>
