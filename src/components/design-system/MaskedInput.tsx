@@ -30,18 +30,20 @@ export function MaskedInput({ mask, defaultValue, ...props }: Props) {
     pattern={config?.pattern}
     value={value}
     onChange={(event) => {
-      let next = mask === "salary"
-        ? event.target.value.replace(/[^\d.,]/g, "")
-        : formatMaskedInput(mask, event.target.value);
-      if (mask === "salary" && next.includes(",")) {
-        const separator = next.indexOf(",");
-        next = `${next.slice(0, separator + 1)}${next.slice(separator + 1).replace(/,/g, "").slice(0, 2)}`;
-      }
+      const next = formatMaskedInput(mask, event.target.value);
       setValue(next);
       if (mask === "salary") {
         const amount = parseSalary(next);
         event.target.setCustomValidity(next && (!Number.isFinite(amount) || amount <= 0) ? "Informe um salário maior que zero." : "");
       }
+    }}
+    onPaste={(event) => {
+      if (mask !== "salary") return;
+      const amount = parseSalary(event.clipboardData.getData("text"));
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      event.preventDefault();
+      event.currentTarget.setCustomValidity("");
+      setValue(formatSalary(amount));
     }}
     onBlur={(event) => {
       if (mask !== "salary" || !value) return;

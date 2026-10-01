@@ -1,4 +1,3 @@
-import { relatedRecords } from "@/lib/api/related";
 import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
 import { lessonStatusOptions } from "@/lib/status-filters";
 import { accessibleLessonsPage } from "@/lib/portal/pagination";
@@ -6,9 +5,7 @@ import { DataList } from "@/components/design-system/DataList";
 import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { LessonCreator } from "@/components/portal/ResourceCreators";
 import { can } from "@/domain/auth";
-import { hasRole } from "@/domain/auth";
 import { apiLabel, formatDateTimePeriod } from "@/lib/api/format";
-import type { Cohort, Person } from "@/lib/api/domain-contracts";
 import { requireCapability } from "@/lib/auth/session";
 
 export default async function LessonsPage({ searchParams }: ListPageProps) {
@@ -16,23 +13,13 @@ export default async function LessonsPage({ searchParams }: ListPageProps) {
   const actor = await requireCapability("lessons:read");
   const page = await accessibleLessonsPage(actor, query);
   const lessons = page.content;
-  const [cohorts, people] = hasRole(actor, "ADMIN")
-    ? await Promise.all([
-        relatedRecords<Cohort>("cohorts", lessons.map((lesson) => lesson.cohortId)),
-        relatedRecords<Person>("people", lessons.map((lesson) => lesson.instructorPersonId)),
-      ])
-    : [[], []];
-  const cohortNames = new Map(cohorts.map((cohort) => [cohort.id, cohort.code]));
-  const personNames = new Map(people.map((person) => [person.id, person.fullName]));
   const records = lessons.map((lesson) => ({
     id: lesson.id,
     href: `/sistema/aulas/${lesson.id}`,
     title: lesson.title,
     schedule: formatDateTimePeriod(lesson.startsAt, lesson.endsAt),
-    cohort: cohortNames.get(lesson.cohortId) ?? lesson.cohortId,
-    instructor:
-      personNames.get(lesson.instructorPersonId) ??
-      (lesson.instructorPersonId === actor.personId ? actor.name : lesson.instructorPersonId),
+    cohort: lesson.cohortCode,
+    instructor: lesson.instructorName,
     modality: apiLabel(lesson.deliveryMode),
     state: apiLabel(lesson.status),
   }));

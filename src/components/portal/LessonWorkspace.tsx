@@ -38,7 +38,8 @@ import type {
   ParticipationStatus,
   ParticipationType,
 } from "@/lib/api/domain-contracts";
-import { apiLabel, formatDateTime, formatTime } from "@/lib/api/format";
+import { apiLabel, formatDateTime, formatTime, formatLearnerName } from "@/lib/api/format";
+import { filterDetailItems } from "@/lib/detail-filter";
 import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 
 import { acknowledgeAttendance, attendanceBody, attendanceChanged, localInputValue, reconcileAttendance, saveAttendanceBatch, type AttendanceDraft } from "@/lib/attendance/drafts";
@@ -233,11 +234,7 @@ function AttendanceBoard({ lesson, participants, attendance, refreshing, onChang
   const [error, setError] = useState("");
   const visible = useMemo(
     () =>
-      rows.filter((row) =>
-        row.participant.learnerId
-          .toLowerCase()
-          .includes(query.trim().toLowerCase()),
-      ),
+      filterDetailItems(rows, query, (row) => `${row.participant.learnerName} ${row.participant.learnerRegistrationNumber}`),
     [query, rows],
   );
 
@@ -352,7 +349,7 @@ function AttendanceBoard({ lesson, participants, attendance, refreshing, onChang
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar ID do aprendiz"
+            placeholder="Buscar nome ou matrícula"
             className="portal-field h-10 w-full pl-9 pr-3"
           />
         </div>
@@ -393,9 +390,10 @@ function AttendanceBoard({ lesson, participants, attendance, refreshing, onChang
             <article key={row.participant.id} data-participant-id={row.participant.id} className="grid gap-4 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-mono text-xs font-semibold">
-                    Aprendiz {row.participant.learnerId}
+                  <p className="text-sm font-semibold">
+                    {formatLearnerName(row.participant.learnerName, row.participant.learnerRegistrationNumber)}
                   </p>
+                  <p className="mt-1 font-mono text-xs text-[var(--inat-muted)]">Matrícula {row.participant.learnerRegistrationNumber}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <StatusMark>{apiLabel(row.participant.participationType)}</StatusMark>
                     <span className="text-xs text-[var(--inat-muted)]">{row.saveState === "saving" ? "Salvando..." : row.saveState === "error" ? "Falha ao salvar" : attendanceChanged(row) ? "Alterações pendentes" : row.recordId ? "Salvo" : "Sem registro"}</span>
@@ -874,7 +872,7 @@ export function LessonWorkspace({
       <PageHeader
         eyebrow={`${formatDateTime(lesson.startsAt)} · ${formatTime(lesson.startsAt)}–${formatTime(lesson.endsAt)}`}
         title={lesson.title}
-        description={`Turma ${lesson.cohortId} · Instrutor ${lesson.instructorPersonId}`}
+        description={`Turma ${lesson.cohortCode} · ${lesson.instructorName}`}
         backHref="/sistema/aulas"
         backLabel="Voltar para aulas"
         action={<StatusMark>{apiLabel(lesson.status)}</StatusMark>}
@@ -951,11 +949,10 @@ export function LessonWorkspace({
                         ? lesson.meetingUrl || "Sem link"
                         : lesson.room || "Sem sala",
                   },
-                  { label: "Turma", value: lesson.cohortId, mono: true },
+                  { label: "Turma", value: `${lesson.cohortCode} · ${lesson.cohortName}` },
                   {
                     label: "Instrutor",
-                    value: lesson.instructorPersonId,
-                    mono: true,
+                    value: lesson.instructorName,
                   },
                 ]}
               />
@@ -1041,13 +1038,14 @@ export function LessonWorkspace({
             </p>
           ) : null}
           <DetailList items={participants} itemLabel="participante" itemPlural="participantes" searchPlaceholder="Buscar aprendiz ou observação"
-            searchText={(participant) => `${participant.learnerId} ${participant.assignmentReason ?? ""} ${apiLabel(participant.participationType)}`}
+            searchText={(participant) => `${participant.learnerName} ${participant.learnerRegistrationNumber} ${participant.assignmentReason ?? ""} ${apiLabel(participant.participationType)}`}
             statusOf={(participant) => participant.status}
             emptyTitle="Nenhum participante"
             emptyDescription={participantsMutable ? "Gere a lista a partir das matrículas ou inclua uma participação." : "A aula foi encerrada sem participantes registrados."}
             emptyIcon="people"
             renderItem={(participant) => <div key={participant.id} className="flex items-center justify-between gap-4 p-4 sm:px-5">
-              <div><p className="font-mono text-xs font-semibold">Aprendiz {participant.learnerId}</p>
+              <div><p className="text-sm font-semibold">{formatLearnerName(participant.learnerName, participant.learnerRegistrationNumber)}</p>
+                <p className="mt-1 font-mono text-xs text-[var(--inat-muted)]">Matrícula {participant.learnerRegistrationNumber}</p>
                 <p className="mt-1 text-xs text-[var(--inat-muted)]">{participant.assignmentReason || "Sem observação de atribuição"}</p></div>
               <div className="flex flex-wrap justify-end gap-2"><StatusMark>{apiLabel(participant.participationType)}</StatusMark><StatusMark>{apiLabel(participant.status)}</StatusMark></div>
             </div>}

@@ -1,4 +1,3 @@
-import { relatedRecords } from "@/lib/api/related";
 import { paginationProps, queryValue, type ListPageProps } from "@/lib/pagination";
 import { recordStatusOptions } from "@/lib/status-filters";
 import { accessibleLearnersPage } from "@/lib/portal/pagination";
@@ -7,14 +6,13 @@ import { PageHeader } from "@/components/design-system/PortalPrimitives";
 import { LearnerOnboardingCreator } from "@/components/portal/ResourceCreators";
 import { can } from "@/domain/auth";
 import { hasRole } from "@/domain/auth";
-import { apiLabel } from "@/lib/api/format";
+import { apiLabel, formatLearnerName } from "@/lib/api/format";
 import { serverApiAll } from "@/lib/api/server";
 import type {
   Cohort,
   CohortEnrollment,
   Contract,
   Organization,
-  Person,
 } from "@/lib/api/domain-contracts";
 import { requireCapability } from "@/lib/auth/session";
 
@@ -29,8 +27,6 @@ export default async function LearnersPage({ searchParams }: ListPageProps) {
     admin ? serverApiAll<Cohort>("/api/cohorts") : Promise.resolve([]),
     admin ? serverApiAll<Organization>("/api/organizations") : Promise.resolve([]),
   ]);
-  const people = admin ? await relatedRecords<Person>("people", page.content.map((learner) => learner.personId)) : [];
-  const personMap = new Map(people.map((person) => [person.id, person.fullName]));
   const learners = page.content;
   const contractById = new Map(contracts.map((contract) => [contract.id, contract]));
   const cohortMap = new Map(cohorts.map((cohort) => [cohort.id, cohort.code]));
@@ -53,14 +49,12 @@ export default async function LearnersPage({ searchParams }: ListPageProps) {
     return {
     id: learner.id,
     href: `/sistema/aprendizes/${learner.id}`,
-    name:
-      personMap.get(learner.personId) ??
-      (learner.id === actor.learnerId ? actor.name : String(learner.registrationNumber)),
+    name: formatLearnerName(learner.fullName, learner.registrationNumber),
     registration: String(learner.registrationNumber),
     education: learner.hasCompletedHighSchool ? "Ensino médio concluído" : "Ensino médio em curso",
-    cohort: enrollment ? cohortMap.get(enrollment.cohortId) ?? enrollment.cohortId : "Sem turma",
+    cohort: enrollment ? cohortMap.get(enrollment.cohortId) ?? "Turma indisponível" : "Sem turma",
     company: contract
-      ? organizationMap.get(contract.employerId) ?? contract.employerId
+      ? contract.employerName || organizationMap.get(contract.employerId) || "Empresa indisponível"
       : "Sem contrato",
     state: apiLabel(learner.status),
   };

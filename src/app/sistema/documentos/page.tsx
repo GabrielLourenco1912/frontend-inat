@@ -22,7 +22,7 @@ export default async function DocumentsPage({ searchParams }: {
         serverApiGetOrNull<Person>(`/api/people/${encodeURIComponent(personId)}`),
         serverApiPage<Learner>(`/api/learners?personId=${encodeURIComponent(personId)}&page=0&size=1`),
       ]);
-      return { personId, name: person?.fullName ?? personId, learnerId: learners.content[0]?.id };
+      return { personId, name: person?.fullName ?? "Pessoa indisponível", learnerId: learners.content[0]?.id };
     })),
     Promise.all([...new Set(page.content.map((document) => document.documentTypeId))].map((id) =>
       serverApiGetOrNull<DocumentType>(`/api/document-types/${id}`),

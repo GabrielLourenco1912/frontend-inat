@@ -113,7 +113,7 @@ export function LearnerDossier(props: Props) {
 
       <div className="mb-5 flex items-center gap-4 border border-[var(--inat-line)] bg-white p-4">
         <span className="grid size-11 place-items-center bg-[var(--inat-ink)] text-sm font-bold text-white">{initials || "AP"}</span>
-        <div><StatusMark>{apiLabel(learner.status)}</StatusMark><p className="mt-1.5 font-mono text-xs text-[var(--inat-muted)]">{learner.id}</p></div>
+        <div><StatusMark>{apiLabel(learner.status)}</StatusMark><p className="mt-1.5 font-mono text-xs text-[var(--inat-muted)]">Matrícula {learner.registrationNumber}</p></div>
         {canManage ? <div className="ml-auto"><LearnerEditor learner={learner} /></div> : null}
       </div>
 
@@ -147,14 +147,14 @@ export function LearnerDossier(props: Props) {
         {tab === "responsaveis" && canSeeGuardians ? <LearnerGuardianManager learner={learner} guardians={guardians} people={guardianPeople} canManage={canManage} /> : null}
 
         {tab === "contrato" && canSeeSensitiveContract ? <Sheet><SectionHeading title="Contratos de aprendizagem" icon="briefcase" /><DetailLinksList
-          items={contracts.map((contract) => ({ id: contract.id, href: `/sistema/contratos/${contract.id}`, title: organizationMap.get(contract.employerId) ?? contract.employerId,
+          items={contracts.map((contract) => ({ id: contract.id, href: `/sistema/contratos/${contract.id}`, title: contract.employerName || organizationMap.get(contract.employerId) || "Empresa indisponível",
             description: `${formatPeriod(contract.startDate, contract.endDate)} · ${formatMinutes(contract.weeklyWorkloadMinutes)} · ${formatCurrency(contract.monthlySalary)}`, status: contract.status }))}
           itemLabel="contrato" itemPlural="contratos" searchPlaceholder="Buscar empresa ou período"
           emptyTitle="Nenhum contrato acessível" emptyDescription="Não há contrato retornado para este aprendiz e perfil." emptyIcon="briefcase" /></Sheet> : null}
 
         {tab === "turmas" ? <Sheet><SectionHeading title="Histórico de matrículas" icon="layers" /><DetailLinksList
           items={enrollments.map((enrollment) => { const cohort = cohortMap.get(enrollment.cohortId); return { id: enrollment.id, href: `/sistema/turmas/${enrollment.cohortId}`,
-            title: `${cohort?.code ?? enrollment.cohortId} · ${cohort?.name ?? "Turma"}`, description: formatPeriod(enrollment.startDate, enrollment.endDate), status: enrollment.status }; })}
+            title: `${cohort?.code ?? "Turma indisponível"} · ${cohort?.name ?? "Turma"}`, description: formatPeriod(enrollment.startDate, enrollment.endDate), status: enrollment.status }; })}
           itemLabel="matrícula" itemPlural="matrículas" searchPlaceholder="Buscar código ou nome da turma"
           emptyTitle="Sem matrículas visíveis" emptyDescription="O backend só expõe a listagem consolidada de matrículas à administração." emptyIcon="layers" /></Sheet> : null}
 
@@ -166,7 +166,7 @@ export function LearnerDossier(props: Props) {
 
         {tab === "atividades" ? <Sheet><SectionHeading title="Atividades e entregas" icon="clipboard" /><DetailLinksList
           items={activities.map((activity) => { const submission = submissionMap.get(activity.id); const lesson = lessonMap.get(activity.lessonId); return { id: activity.id, href: `/sistema/atividades/${activity.id}`,
-            title: activity.title, description: `${lesson?.title ?? activity.lessonId} · prazo ${formatDateTime(activity.dueAt)}`, status: submission?.status ?? "Sem entrega" }; })}
+            title: activity.title, description: `${lesson?.title ?? "Aula indisponível"} · prazo ${formatDateTime(activity.dueAt)}`, status: submission?.status ?? "Sem entrega" }; })}
           itemLabel="atividade" itemPlural="atividades" searchPlaceholder="Buscar atividade ou aula"
           emptyTitle="Nenhuma atividade acessível" emptyDescription="Não há atividades relacionadas às aulas disponíveis." emptyIcon="clipboard" /></Sheet> : null}
 

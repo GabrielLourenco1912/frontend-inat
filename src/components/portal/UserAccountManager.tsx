@@ -419,7 +419,7 @@ export function UserAccountManager({
                     <input
                       value={
                         people.find((person) => person.id === selected.personId)
-                          ?.fullName ?? selected.personId
+                          ?.fullName ?? "Pessoa indisponível"
                       }
                       className="portal-field mt-2 h-10 w-full cursor-not-allowed bg-[var(--inat-paper)] px-3 text-[var(--inat-muted)]"
                       aria-describedby="linked-person-help"

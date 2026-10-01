@@ -238,7 +238,9 @@ export const apiGroups: ApiGroup[] = [
     name: "Aprendizes e responsáveis",
     description: "Perfil pedagógico do aprendiz, onboarding atômico e responsáveis legais.",
     endpoints: [
-      endpoint("GET", "/api/learners/{id}", "Consultar aprendiz", "contextual", "LearnerDtos.Response"),
+      endpoint("GET", "/api/learners/{id}", "Consultar aprendiz", "contextual", "LearnerDtos.Response", {
+        note: "Inclui fullName e registrationNumber para identificação do aprendiz dentro do contexto autorizado.",
+      }),
       endpoint("GET", "/api/learners", "Listar aprendizes", "admin", "PageResponse<LearnerDtos.Response>", {
         parameters: [...pagination, "personId — filtro opcional"],
       }),
@@ -345,7 +347,9 @@ export const apiGroups: ApiGroup[] = [
         request: "LessonDtos.Request",
         contentType: "application/json",
       }),
-      endpoint("GET", "/api/lessons/{id}", "Consultar aula", "contextual", "LessonDtos.Response"),
+      endpoint("GET", "/api/lessons/{id}", "Consultar aula", "contextual", "LessonDtos.Response", {
+        note: "Inclui description, cohortCode, cohortName e instructorName. Participantes incluem learnerName e learnerRegistrationNumber.",
+      }),
       endpoint("GET", "/api/lessons", "Listar aulas", "admin", "PageResponse<LessonDtos.Response>", { parameters: pagination }),
       endpoint("GET", "/api/lessons/me", "Listar aulas acessíveis ao ator", "authenticated", "List<LessonDtos.Response>"),
       endpoint("PUT", "/api/lessons/{id}", "Atualizar aula", "contextual", "LessonDtos.Response", {
@@ -446,7 +450,9 @@ export const apiGroups: ApiGroup[] = [
         request: "ActivitySubmissionDtos.SaveRequest",
         contentType: "application/json",
       }),
-      endpoint("GET", "/api/activity-submissions/{id}", "Consultar entrega", "contextual", "ActivitySubmissionDtos.Response"),
+      endpoint("GET", "/api/activity-submissions/{id}", "Consultar entrega", "contextual", "ActivitySubmissionDtos.Response", {
+        note: "Inclui learnerName e learnerRegistrationNumber; learnerId continua sendo a referência utilizada nas operações.",
+      }),
       endpoint("GET", "/api/activity-submissions", "Listar todas as entregas", "admin", "PageResponse<ActivitySubmissionDtos.Response>", { parameters: pagination }),
       endpoint("GET", "/api/activity-submissions/activity/{activityId}", "Listar entregas da atividade", "contextual", "List<ActivitySubmissionDtos.Response>"),
       endpoint("GET", "/api/activity-submissions/learner/{learnerId}", "Listar entregas do aprendiz", "contextual", "List<ActivitySubmissionDtos.Response>"),
@@ -592,7 +598,7 @@ export const backendModules: BackendModule[] = [
     name: "Aulas e frequência",
     kind: "Domínio",
     description: "Aulas, participantes esperados, remanejamento, frequência e reconciliação temporal.",
-    models: ["Lesson", "LessonParticipant", "AttendanceRecord"],
+    models: ["Lesson", "LessonFile", "LessonParticipant", "AttendanceRecord"],
     rules: ["Sem sobreposição", "Estados guiados pelo relógio", "Presença online por conclusão"],
   },
   {

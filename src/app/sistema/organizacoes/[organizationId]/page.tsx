@@ -88,7 +88,7 @@ export default async function OrganizationDetailPage({
             { label: "Logradouro", value: `${organization.address.street}, ${organization.address.streetNumber}` },
             { label: "Cidade", value: `${organization.address.city}/${organization.address.stateCode}` },
             { label: "CEP", value: organization.address.postalCode, mono: true },
-            { label: "Organização superior", value: organization.parentOrganizationId || "Nenhuma", mono: Boolean(organization.parentOrganizationId) },
+            { label: "Organização superior", value: organization.parentOrganizationId ? organization.parentOrganizationName || "Organização indisponível" : "Nenhuma" },
           ]} />
         </Sheet>
         <Sheet accent>
@@ -109,7 +109,7 @@ export default async function OrganizationDetailPage({
           <SectionHeading title="Aprendizes vinculados" icon="graduation" stackOnMobile action={admin ? <AttendanceExportButton scope="organizations" id={organization.id} /> : undefined} />
           <DetailLinksList items={relatedLearners.map((learner) => {
             const contract = contracts.find((item) => item.learnerId === learner.id);
-            return { id: learner.id, href: `/sistema/aprendizes/${learner.id}`, title: learnerPersonMap.get(learner.id) || String(learner.registrationNumber),
+            return { id: learner.id, href: `/sistema/aprendizes/${learner.id}`, title: learner.fullName || learnerPersonMap.get(learner.id) || `Aprendiz · matrícula ${learner.registrationNumber}`,
               description: contract ? formatPeriod(contract.startDate, contract.endDate) : "Contrato relacionado",
               searchText: `${learner.registrationNumber} ${contract?.id ?? ""}`, status: learner.status };
           })} itemLabel="aprendiz" itemPlural="aprendizes" searchPlaceholder="Buscar aprendiz ou matrícula"

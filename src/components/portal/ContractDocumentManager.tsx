@@ -173,14 +173,14 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
       {pagination ? <p className="px-4 py-2 text-xs text-[var(--inat-muted)]">Os filtros se aplicam aos documentos desta página.</p> : null}
       <DocumentWorkspace
         pagination={pagination}
-        items={visible.map((document) => ({ id: document.id, title: typeMap.get(document.documentTypeId) ?? `Tipo ${document.documentTypeId}`, subtitle: document.file.originalName, detail: `Versão ${document.versionNumber} · ${formatDateTime(document.createdAt)}`, status: <StatusMark tone={document.current ? "success" : "neutral"}>{document.current ? "Atual" : "Anterior"}</StatusMark> }))}
+        items={visible.map((document) => ({ id: document.id, title: typeMap.get(document.documentTypeId) ?? "Tipo de documento indisponível", subtitle: document.file.originalName, detail: `Versão ${document.versionNumber} · ${formatDateTime(document.createdAt)}`, status: <StatusMark tone={document.current ? "success" : "neutral"}>{document.current ? "Atual" : "Anterior"}</StatusMark> }))}
         selectedId={selected?.id}
         onSelect={(id) => { setSelectedId(id); setMessage(""); }}
         emptyTitle={documents.length ? "Nenhuma versão neste filtro" : "Nenhum documento contratual"}
         emptyDescription={documents.length ? "Selecione outro filtro para consultar as versões." : editable ? "Anexe a primeira versão para este contrato." : "Este contrato não possui versões anexadas."}
       >
         {selected ? <>
-          <SectionHeading title={typeMap.get(selected.documentTypeId) ?? `Tipo ${selected.documentTypeId}`} description={`Versão ${selected.versionNumber}`} action={<StatusMark tone={selected.current ? "success" : "neutral"}>{selected.current ? "Atual" : "Anterior"}</StatusMark>} />
+          <SectionHeading title={typeMap.get(selected.documentTypeId) ?? "Tipo de documento indisponível"} description={`Versão ${selected.versionNumber}`} action={<StatusMark tone={selected.current ? "success" : "neutral"}>{selected.current ? "Atual" : "Anterior"}</StatusMark>} />
           <div className="grid gap-5 p-4 sm:p-5 xl:grid-cols-[minmax(0,1fr)_15rem]">
             <div className="min-w-0">
               <DocumentFileCard file={selected.file} onDownload={() => download(selected)} downloading={downloading} />
@@ -192,7 +192,7 @@ export function ContractDocumentManager({ contractId, contractStatus, documents:
             </div>
             <div>
               <div className="border border-[var(--inat-line)]"><DefinitionList columns={1} items={[
-                { label: "Tipo", value: typeMap.get(selected.documentTypeId) ?? `Tipo ${selected.documentTypeId}` },
+                { label: "Tipo", value: typeMap.get(selected.documentTypeId) ?? "Tipo de documento indisponível" },
                 { label: "Versão", value: String(selected.versionNumber) },
                 { label: "Situação", value: selected.current ? "Atual" : "Anterior" },
                 { label: "Enviado em", value: formatDateTime(selected.createdAt) },

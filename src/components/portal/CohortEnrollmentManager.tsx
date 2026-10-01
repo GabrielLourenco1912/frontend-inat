@@ -144,8 +144,8 @@ export function CohortEnrollmentManager({
         const canCancel = enrollment.status === "PENDING" || enrollment.status === "ACTIVE";
         return <div key={enrollment.id} className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
           <Link href={`/sistema/aprendizes/${enrollment.learnerId}`} className="hover:text-[var(--inat-teal-dark)]">
-            <p className="text-sm font-semibold">{option?.label ?? enrollment.learnerId}</p>
-            <p className="mt-1 text-xs text-[var(--inat-muted)]">{formatPeriod(enrollment.startDate, enrollment.endDate)} · contrato {enrollment.contractId}</p>
+            <p className="text-sm font-semibold">{option?.label ?? "Aprendiz indisponível"}</p>
+            <p className="mt-1 text-xs text-[var(--inat-muted)]">{formatPeriod(enrollment.startDate, enrollment.endDate)}{contract ? ` · Contrato ${formatPeriod(contract.startDate, contract.endDate)}` : ""}</p>
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <StatusMark>{apiLabel(enrollment.status)}</StatusMark>

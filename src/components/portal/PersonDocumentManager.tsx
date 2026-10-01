@@ -190,7 +190,7 @@ export function PersonDocumentManager({ person, documents: receivedDocuments, do
         pagination={pagination}
         items={visible.map((document) => ({
           id: document.id,
-          title: typeMap.get(document.documentTypeId) ?? `Tipo ${document.documentTypeId}`,
+          title: typeMap.get(document.documentTypeId) ?? "Tipo de documento indisponível",
           subtitle: document.file.originalName,
           detail: document.expiresOn ? `Validade: ${formatDate(document.expiresOn)}` : "Sem validade definida",
           status: <StatusMark>{apiLabel(document.verificationStatus)}</StatusMark>,
@@ -201,7 +201,7 @@ export function PersonDocumentManager({ person, documents: receivedDocuments, do
         emptyDescription={documents.length ? "Selecione outra situação para consultar os arquivos." : "Anexe o primeiro arquivo usando um tipo de documento pessoal."}
       >
         {selected ? <>
-          <SectionHeading title={typeMap.get(selected.documentTypeId) ?? `Tipo ${selected.documentTypeId}`} description={person.fullName} action={<StatusMark>{apiLabel(selected.verificationStatus)}</StatusMark>} />
+          <SectionHeading title={typeMap.get(selected.documentTypeId) ?? "Tipo de documento indisponível"} description={person.fullName} action={<StatusMark>{apiLabel(selected.verificationStatus)}</StatusMark>} />
           <div className="grid gap-5 p-4 sm:p-5 xl:grid-cols-[minmax(0,1fr)_15rem]">
             <div className="min-w-0">
               <DocumentFileCard file={selected.file} onDownload={() => download(selected)} downloading={downloading} />
@@ -236,7 +236,7 @@ export function PersonDocumentManager({ person, documents: receivedDocuments, do
         <p className="mt-2 text-xs leading-5 text-[var(--inat-muted)]">{editing ? "O arquivo, a pessoa e o tipo permanecem os mesmos. Uma validade vigente verifica novamente um documento expirado." : "Um arquivo por tipo para esta pessoa. Formatos: PDF, PNG, JPG ou WEBP, com até 25 MB."}</p>
         {error ? <p role="alert" className="mt-4 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
         <fieldset disabled={saving} className="mt-5 grid gap-4 sm:grid-cols-2">
-          {editing ? <p className="text-sm sm:col-span-2">Tipo: <strong>{typeMap.get(editing.documentTypeId) ?? `Tipo ${editing.documentTypeId}`}</strong></p> : <label className="sm:col-span-2"><span className="portal-label">Tipo pessoal disponível</span><select name="documentTypeId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{availableTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></label>}
+          {editing ? <p className="text-sm sm:col-span-2">Tipo: <strong>{typeMap.get(editing.documentTypeId) ?? "Tipo de documento indisponível"}</strong></p> : <label className="sm:col-span-2"><span className="portal-label">Tipo pessoal disponível</span><select name="documentTypeId" defaultValue="" className="portal-field mt-2 h-10 w-full px-3" required><option value="" disabled>Selecione</option>{availableTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></label>}
           <label className="sm:col-span-2"><span className="portal-label">Número (opcional e único no tipo)</span><input name="documentNumber" maxLength={80} defaultValue={editing?.documentNumber ?? ""} className="portal-field mt-2 h-10 w-full px-3" /></label>
           {!editing ? <label className="sm:col-span-2"><span className="portal-label">Arquivo</span><input name="file" type="file" accept={DOCUMENT_FILE_ACCEPT} className="portal-field mt-2 w-full px-3 py-2" required /></label> : null}
           <label><span className="portal-label">Emissão</span><input name="issuedOn" type="date" defaultValue={editing?.issuedOn ?? ""} max={today()} className="portal-field mt-2 h-10 w-full px-3" /></label>

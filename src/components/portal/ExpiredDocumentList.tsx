@@ -17,8 +17,8 @@ export function ExpiredDocumentList({ page, documentTypes, owners }: {
     return {
       id: document.id,
       href: documentOwnerHref(document.personId, document.id, owner?.learnerId),
-      owner: owner?.name ?? document.personId,
-      document: typeMap.get(document.documentTypeId) ?? `Tipo ${document.documentTypeId}`,
+      owner: owner?.name ?? "Pessoa indisponível",
+      document: typeMap.get(document.documentTypeId) ?? "Tipo de documento indisponível",
       expires: formatDate(document.expiresOn),
       file: document.file.originalName,
       kind: owner?.learnerId ? "Aprendiz" : "Pessoa",

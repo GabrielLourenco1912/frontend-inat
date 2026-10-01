@@ -92,7 +92,7 @@ export function DashboardView({ actor, data }: { actor: Actor; data: DashboardDa
               {upcomingLessons.map((lesson) => (
                 <Link key={lesson.id} href={`/sistema/aulas/${lesson.id}`} className="group grid gap-3 p-4 hover:bg-[var(--inat-mist)]/35 sm:grid-cols-[7rem_1fr_auto] sm:items-center sm:px-5">
                   <div><p className="font-mono text-sm font-semibold">{formatTime(lesson.startsAt)}</p><p className="mt-1 text-[0.625rem] text-[var(--inat-muted)]">{formatDateTime(lesson.startsAt)}</p></div>
-                  <div className="min-w-0"><p className="truncate text-sm font-semibold group-hover:text-[var(--inat-teal-dark)]">{lesson.title}</p><p className="mt-1 truncate text-xs text-[var(--inat-muted)]">Turma {lesson.cohortId} · {apiLabel(lesson.deliveryMode)}</p></div>
+                  <div className="min-w-0"><p className="truncate text-sm font-semibold group-hover:text-[var(--inat-teal-dark)]">{lesson.title}</p><p className="mt-1 truncate text-xs text-[var(--inat-muted)]">Turma {lesson.cohortCode} · {apiLabel(lesson.deliveryMode)}</p></div>
                   <StatusMark>{apiLabel(lesson.status)}</StatusMark>
                 </Link>
               ))}

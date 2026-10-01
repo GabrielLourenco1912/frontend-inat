@@ -71,6 +71,7 @@ export type Person = {
 export type Organization = {
   id: string;
   parentOrganizationId: string | null;
+  parentOrganizationName: string | null;
   address: Address;
   organizationTypes: OrganizationType[];
   legalName: string;
@@ -100,6 +101,7 @@ export type OrganizationMembership = {
 export type Learner = {
   id: string;
   personId: string;
+  fullName: string;
   registrationNumber: number;
   hasCompletedHighSchool: boolean;
   status: RecordStatus;
@@ -161,6 +163,10 @@ export type Contract = {
   learnerId: string;
   employerId: string;
   schoolId: string | null;
+  learnerName: string;
+  learnerRegistrationNumber: number;
+  employerName: string;
+  schoolName: string | null;
   startDate: string;
   endDate: string | null;
   monthlySalary: number;
@@ -176,6 +182,8 @@ export type ContractSchoolChange = {
   id: string;
   previousSchoolId: string | null;
   newSchoolId: string | null;
+  previousSchoolName: string | null;
+  newSchoolName: string | null;
   changedByUserId: string | null;
   changedAt: string;
 };
@@ -184,6 +192,9 @@ export type Lesson = {
   id: string;
   cohortId: string;
   instructorPersonId: string;
+  cohortCode: string;
+  cohortName: string;
+  instructorName: string;
   title: string;
   description: string;
   startsAt: string;
@@ -201,6 +212,8 @@ export type LessonParticipant = {
   id: string;
   lessonId: string;
   learnerId: string;
+  learnerName: string;
+  learnerRegistrationNumber: number;
   sourceEnrollmentId: string | null;
   assignedByUserId: string | null;
   participationType: ParticipationType;
@@ -242,6 +255,8 @@ export type ActivitySubmission = {
   id: string;
   activityId: string;
   learnerId: string;
+  learnerName: string;
+  learnerRegistrationNumber: number;
   gradedByUserId: string | null;
   textAnswer: string | null;
   status: SubmissionStatus;

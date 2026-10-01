@@ -49,6 +49,10 @@ export function formatCurrency(value: number | null) {
   }).format(value);
 }
 
+export function formatLearnerName(name?: string | null, registrationNumber?: number | null) {
+  return name?.trim() || (registrationNumber != null ? `Aprendiz · matrícula ${registrationNumber}` : "Aprendiz indisponível");
+}
+
 export function formatMinutes(value: number) {
   const hours = Math.floor(value / 60);
   const minutes = value % 60;

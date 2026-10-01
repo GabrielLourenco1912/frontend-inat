@@ -26,7 +26,13 @@ export function formatSalary(value: string | number) {
 }
 
 export function formatMaskedInput(mask: InputMask, value: string) {
-  if (mask === "salary") return value;
+  if (mask === "salary") {
+    const raw = value.replace(/[^\d.,]/g, "");
+    const separator = raw.indexOf(",");
+    const whole = digitsOnly(separator < 0 ? raw : raw.slice(0, separator)).replace(/^0+(?=\d)/, "");
+    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return separator < 0 ? grouped : `${grouped || "0"},${digitsOnly(raw.slice(separator + 1)).slice(0, 2)}`;
+  }
   const digits = mask === "phone" ? phoneDigits(value) : digitsOnly(value);
   if (mask === "postalCode") {
     const code = digits.slice(0, 8);

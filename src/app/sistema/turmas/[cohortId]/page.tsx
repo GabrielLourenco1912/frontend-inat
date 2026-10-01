@@ -64,10 +64,10 @@ export default async function CohortDetailPage({
   );
   const contractOptions = contracts.map((contract) => {
     const learner = learnerMap.get(contract.learnerId);
-    const name = learner ? personMap.get(learner.personId) || learner.registrationNumber : contract.learnerId;
+    const name = contract.learnerName || (learner ? learner.fullName || personMap.get(learner.personId) || `Matrícula ${learner.registrationNumber}` : "Aprendiz indisponível");
     return {
       contract,
-      label: `${name} · ${organizationMap.get(contract.employerId) ?? contract.employerId}`,
+      label: `${name} · ${contract.employerName || organizationMap.get(contract.employerId) || "Empresa indisponível"}`,
     };
   });
 
