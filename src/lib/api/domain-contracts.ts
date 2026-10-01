@@ -185,6 +185,7 @@ export type Lesson = {
   cohortId: string;
   instructorPersonId: string;
   title: string;
+  description: string;
   startsAt: string;
   endsAt: string;
   deliveryMode: DeliveryMode;
@@ -259,6 +260,13 @@ export type StoredFile = {
   mimeType: string;
   sizeBytes: number;
   checksumSha256: string;
+  createdAt: string;
+};
+
+export type LessonFile = {
+  lessonId: string;
+  file: StoredFile;
+  sortOrder: number;
   createdAt: string;
 };
 

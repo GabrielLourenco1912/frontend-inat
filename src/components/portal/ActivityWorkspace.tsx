@@ -1,6 +1,7 @@
 "use client";
 
 import { DetailList } from "@/components/design-system/DetailList";
+import { AttachmentFileList as FileList } from "@/components/portal/AttachmentFileList";
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -16,7 +17,6 @@ import {
 import {
   apiRequest,
   deleteResource,
-  downloadResource,
   patchJson,
   postJson,
   putJson,
@@ -30,7 +30,7 @@ import type {
   SubmissionFile,
   SubmissionStatus,
 } from "@/lib/api/domain-contracts";
-import { apiLabel, formatDateTime, formatFileSize } from "@/lib/api/format";
+import { apiLabel, formatDateTime } from "@/lib/api/format";
 import { parseSaoPauloDateTimeInput, saoPauloDateTimeInputValue } from "@/lib/api/time-zone";
 import {
   GENERAL_ATTACHMENT_ACCEPT,
@@ -38,48 +38,6 @@ import {
   uploadValidationError,
 } from "@/lib/files/upload-policy";
 
-function fileNameFromDisposition(value: string | null, fallback: string) {
-  if (!value) return fallback;
-  const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-  if (encoded) return decodeURIComponent(encoded);
-  return value.match(/filename="?([^";]+)"?/i)?.[1] ?? fallback;
-}
-
-async function saveDownload(url: string, fallbackName: string) {
-  const { blob, contentDisposition } = await downloadResource(url);
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = fileNameFromDisposition(contentDisposition, fallbackName);
-  anchor.click();
-  URL.revokeObjectURL(objectUrl);
-}
-
-function FileList({
-  files,
-  url,
-  onRemove,
-}: {
-  files: { file: ActivityFile["file"] }[];
-  url: (fileId: string) => string;
-  onRemove?: (fileId: string) => void;
-}) {
-  const [error, setError] = useState("");
-  if (!files.length) return <p className="p-4 text-sm text-[var(--inat-muted)]">Nenhum arquivo anexado.</p>;
-  return (
-    <div className="divide-y divide-[var(--inat-line)]">
-      {error ? <p role="alert" className="m-4 border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</p> : null}
-      {files.map(({ file }) => (
-        <div key={file.id} className="flex items-center gap-3 p-4">
-          <Icon name="paperclip" className="size-4 text-[var(--inat-teal-dark)]" />
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{file.originalName}</p><p className="mt-1 font-mono text-[0.625rem] text-[var(--inat-muted)]">{file.mimeType} · {formatFileSize(file.sizeBytes)}</p></div>
-          <button type="button" onClick={() => saveDownload(url(file.id), file.originalName).catch(() => setError("Não foi possível baixar o arquivo."))} className="portal-button portal-button-quiet h-9"><Icon name="download" className="size-4" />Baixar</button>
-          {onRemove ? <button type="button" onClick={() => onRemove(file.id)} className="portal-button portal-button-quiet h-9 text-rose-700" aria-label={`Remover ${file.originalName}`}><Icon name="trash" className="size-4" /></button> : null}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function LearnerSubmission({
   activity,

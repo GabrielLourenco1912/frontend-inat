@@ -1,6 +1,7 @@
 "use client";
 
 import { ActivityCreator } from "@/components/portal/ActivityCreator";
+import { LessonMaterials } from "@/components/portal/LessonMaterials";
 import { SearchSelect } from "@/components/design-system/SearchSelect";
 
 import { PaginatedContent } from "@/components/design-system/ClientPagination";
@@ -31,6 +32,7 @@ import type {
   AttendanceStatus,
   DeliveryMode,
   Lesson,
+  LessonFile,
   LessonParticipant,
   LessonStatus,
   ParticipationStatus,
@@ -41,7 +43,7 @@ import { parseSaoPauloDateTimeInput } from "@/lib/api/time-zone";
 
 import { acknowledgeAttendance, attendanceBody, attendanceChanged, localInputValue, reconcileAttendance, saveAttendanceBatch, type AttendanceDraft } from "@/lib/attendance/drafts";
 
-type Tab = "resumo" | "participantes" | "chamada" | "atividades" | "historico";
+type Tab = "resumo" | "materiais" | "participantes" | "chamada" | "atividades" | "historico";
 const attendanceOptions: AttendanceStatus[] = [
   "PRESENT",
   "ABSENT",
@@ -552,6 +554,7 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
           cohortId: lesson.cohortId,
           instructorPersonId: lesson.instructorPersonId,
           title: String(form.get("title") ?? "").trim(),
+          description: String(form.get("description") ?? "").trim(),
           startsAt: startsAt.toISOString(),
           endsAt: endsAt.toISOString(),
           deliveryMode,
@@ -669,6 +672,10 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
                   className="portal-field mt-2 h-10 w-full px-3"
                   required
                 />
+              </label>
+              <label className="sm:col-span-2">
+                <span className="portal-label">Descrição da aula</span>
+                <textarea name="description" defaultValue={lesson.description} maxLength={5000} rows={5} className="portal-field mt-2 w-full px-3 py-2" required />
               </label>
               <label>
                 <span className="portal-label">Início</span>
@@ -791,6 +798,7 @@ function LessonManager({ lesson }: { lesson: Lesson }) {
 
 export function LessonWorkspace({
   lesson,
+  lessonFiles,
   activities,
   participants,
   attendance,
@@ -798,6 +806,7 @@ export function LessonWorkspace({
   allowManualLearnerId = false,
 }: {
   lesson: Lesson;
+  lessonFiles: LessonFile[];
   activities: Activity[];
   participants: LessonParticipant[];
   attendance: AttendanceRecord[];
@@ -815,6 +824,7 @@ export function LessonWorkspace({
   const participantsMutable = !["CANCELLED", "COMPLETED"].includes(lesson.status);
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: "resumo", label: "Resumo" },
+    { id: "materiais", label: "Materiais", count: lessonFiles.length },
     ...(canManage
       ? [
           {
@@ -917,6 +927,10 @@ export function LessonWorkspace({
 
       {tab === "resumo" ? (
         <>
+          <Sheet className="mb-5">
+            <SectionHeading title="Descrição da aula" icon="book" />
+            <p className="whitespace-pre-wrap break-words p-5 text-sm leading-7">{lesson.description}</p>
+          </Sheet>
           <ExternalLessonPlayer
             url={lesson.externalLessonUrl}
             title={`Aula externa: ${lesson.title}`}
@@ -969,6 +983,8 @@ export function LessonWorkspace({
           </div>
         </>
       ) : null}
+
+      {tab === "materiais" ? <LessonMaterials lesson={lesson} files={lessonFiles} canManage={canManage} /> : null}
 
       {tab === "participantes" && canManage ? (
         <Sheet>

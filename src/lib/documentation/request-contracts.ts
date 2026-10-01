@@ -382,6 +382,7 @@ export const requestContracts: Record<string, ApiRequestContract> = {
       cohortId,
       instructorPersonId: personId,
       title: "Fundamentos de cidadania",
+      description: "Direitos, deveres e participação cidadã: objetivos e orientações da aula.",
       startsAt: "2026-10-05T16:00:00Z",
       endsAt: "2026-10-05T18:00:00Z",
       deliveryMode: "ONLINE",
@@ -391,6 +392,7 @@ export const requestContracts: Record<string, ApiRequestContract> = {
       status: "SCHEDULED",
     },
     rules: [
+      "description — obrigatória, até 5.000 caracteres",
       "startsAt/endsAt — instantes ISO 8601; término posterior ao início",
       "deliveryMode — ONSITE ou ONLINE",
       "meetingUrl/externalLessonUrl — URL HTTP(S) opcional",
@@ -448,6 +450,17 @@ export const requestContracts: Record<string, ApiRequestContract> = {
       "availableAt/dueAt — instantes ISO 8601; prazo posterior à disponibilidade",
       "maxScore — opcional e maior ou igual a zero",
       "status — DRAFT, PUBLISHED, CLOSED ou CANCELLED",
+    ],
+  },
+  "metadata: LessonFileDtos.Request + file: binário": {
+    example: { sortOrder: 0 },
+    rules: [
+      "sortOrder — inteiro maior ou igual a zero",
+      "metadata deve ser enviado como uma parte application/json",
+    ],
+    parts: [
+      jsonPart("LessonFileDtos.Request serializado em JSON"),
+      filePart("Material da aula; tamanho e extensões seguem a política de materiais de atividades"),
     ],
   },
   "metadata: ActivityFileRequest + file: binário": {

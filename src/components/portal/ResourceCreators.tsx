@@ -271,6 +271,7 @@ export function LessonCreator() {
             cohortId: String(form.get("cohortId")),
             instructorPersonId: String(form.get("instructorPersonId")),
             title: String(form.get("title") ?? "").trim(),
+            description: String(form.get("description") ?? "").trim(),
             startsAt: parseSaoPauloDateTimeInput(String(form.get("startsAt"))).toISOString(),
             endsAt: parseSaoPauloDateTimeInput(String(form.get("endsAt"))).toISOString(),
             deliveryMode: String(form.get("deliveryMode")),
@@ -291,6 +292,11 @@ export function LessonCreator() {
                 className="portal-field mt-2 h-10 w-full px-3"
                 required
               />
+            </label>
+            <label className="sm:col-span-2">
+              <span className="portal-label">Descrição da aula</span>
+              <textarea name="description" maxLength={5000} rows={5} className="portal-field mt-2 w-full px-3 py-2" required />
+              <span className="mt-1.5 block text-xs text-[var(--inat-muted)]">Apresente o conteúdo e as orientações da aula. Materiais podem ser anexados após salvar.</span>
             </label>
             <label>
               <span className="portal-label">Turma</span>

@@ -339,7 +339,7 @@ export const apiGroups: ApiGroup[] = [
   {
     id: "lessons",
     name: "Aulas e participantes",
-    description: "Agenda presencial/online, chamada esperada, conflitos de horário e remanejamento.",
+    description: "Agenda presencial/online, descrição, materiais, chamada esperada, conflitos de horário e remanejamento.",
     endpoints: [
       endpoint("POST", "/api/lessons", "Criar aula", "admin", "LessonDtos.Response", {
         request: "LessonDtos.Request",
@@ -353,8 +353,16 @@ export const apiGroups: ApiGroup[] = [
         contentType: "application/json",
       }),
       endpoint("DELETE", "/api/lessons/{id}", "Excluir aula", "contextual", "Void", {
-        note: "Somente aulas SCHEDULED sem participantes nem atividades podem ser removidas fisicamente.",
+        note: "Somente aulas SCHEDULED sem participantes, atividades ou materiais podem ser removidas fisicamente.",
       }),
+      endpoint("POST", "/api/lessons/{lessonId}/files", "Anexar material à aula", "contextual", "LessonFileDtos.Response", {
+        request: "metadata: LessonFileDtos.Request + file: binário",
+        contentType: "multipart/form-data",
+        note: "ADMIN ou instrutor da aula. Mesma política de tamanho, formatos e inspeção dos materiais de atividades.",
+      }),
+      endpoint("GET", "/api/lessons/{lessonId}/files/{fileId}/content", "Baixar material da aula", "contextual", "Resource (binário)"),
+      endpoint("GET", "/api/lessons/{lessonId}/files", "Listar materiais da aula", "contextual", "List<LessonFileDtos.Response>"),
+      endpoint("DELETE", "/api/lessons/{lessonId}/files/{fileId}", "Remover material da aula", "contextual", "Void"),
       endpoint("POST", "/api/lesson-participants", "Adicionar participante", "contextual", "LessonParticipantDtos.Response", {
         request: "LessonParticipantDtos.Request",
         contentType: "application/json",

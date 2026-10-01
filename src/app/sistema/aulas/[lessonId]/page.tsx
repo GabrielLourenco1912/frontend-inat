@@ -6,6 +6,7 @@ import type {
   Activity,
   AttendanceRecord,
   Lesson,
+  LessonFile,
   LessonParticipant,
 } from "@/lib/api/domain-contracts";
 import { serverApiGet, serverApiGetOrNull } from "@/lib/api/server";
@@ -25,7 +26,7 @@ export default async function LessonPage({
   if (!lesson) notFound();
 
   const canManage = can(actor, "attendance:manage");
-  const [activities, participants, attendance] = await Promise.all([
+  const [activities, participants, attendance, lessonFiles] = await Promise.all([
     serverApiGet<Activity[]>(`/api/activities/lesson/${encodeURIComponent(lesson.id)}`),
     canManage
       ? serverApiGet<LessonParticipant[]>(
@@ -37,11 +38,13 @@ export default async function LessonPage({
           `/api/attendance-records/lesson/${encodeURIComponent(lesson.id)}`,
         )
       : Promise.resolve([]),
+    serverApiGet<LessonFile[]>(`/api/lessons/${encodeURIComponent(lesson.id)}/files`),
   ]);
 
   return (
     <LessonWorkspace
       lesson={lesson}
+      lessonFiles={lessonFiles}
       activities={activities}
       participants={participants}
       attendance={attendance}
