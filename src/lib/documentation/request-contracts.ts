@@ -23,11 +23,11 @@ const activityId = "01K5X3M8Y7ABCD1234EFGH5686";
 
 const addressExample = {
   postalCode: "83252000",
-  street: "Rua João Teixeira",
+  street: "RUA JOÃO TEIXEIRA",
   streetNumber: "1257",
-  addressLine2: "Casa 2",
-  district: "Vila Bela",
-  city: "Paranaguá",
+  addressLine2: "CASA 2",
+  district: "VILA BELA",
+  city: "PARANAGUÁ",
   stateCode: "PR",
   countryCode: "BR",
 };
@@ -179,8 +179,8 @@ export const requestContracts: Record<string, ApiRequestContract> = {
       parentOrganizationId: null,
       address: addressExample,
       organizationTypes: ["EMPLOYER", "SCHOOL"],
-      legalName: "Empresa Exemplo Ltda.",
-      tradeName: "Empresa Exemplo",
+      legalName: "EMPRESA EXEMPLO LTDA.",
+      tradeName: "EMPRESA EXEMPLO",
       taxId: "12345678000195",
       contactEmail: "contato@empresa.example",
       phoneNumber: "4134567890",
@@ -190,7 +190,8 @@ export const requestContracts: Record<string, ApiRequestContract> = {
     rules: [
       "organizationTypes — obrigatório, ao menos um de EMPLOYER e/ou SCHOOL; envie como array no POST e no PUT",
       "Ao editar, tipos já usados por contratos não podem ser removidos; outros podem ser adicionados",
-      "taxId — exatamente 14 dígitos",
+      "taxId — sem formatação: 12 letras de A a Z e/ou números, seguidos de 2 dígitos; CNPJs numéricos continuam válidos",
+      "Letras do CNPJ são normalizadas para maiúsculas; duplicidade e vínculos de contratos usam o valor normalizado",
       "attendanceClosingDay — opcional, entre 1 e 31",
       "status — ACTIVE, INACTIVE ou SUSPENDED",
     ],

@@ -132,13 +132,13 @@ export function apiLabel(value?: string | null) {
 export function maskTaxId(value?: string | null) {
   if (!value) return "—";
   // Count document positions without punctuation, preserving anonymized digits.
-  const document = value.replace(/[.\-/\s]/g, "");
+  const document = value.replace(/[.\-/\s]/g, "").toUpperCase();
   if (/^[\d*]{11}$/.test(document)) {
     const masked = document.includes("*")
       ? document
       : `***${document.slice(3, 9)}**`;
     return `${masked.slice(0, 3)}.${masked.slice(3, 6)}.${masked.slice(6, 9)}-${masked.slice(9)}`;
   }
-  if (/^[\d*]{14}$/.test(document)) return `${document.slice(0, 2)}.${document.slice(2, 5)}.${document.slice(5, 8)}/${document.slice(8, 12)}-${document.slice(12)}`;
+  if (/^[A-Z\d*]{12}[\d*]{2}$/.test(document)) return `${document.slice(0, 2)}.${document.slice(2, 5)}.${document.slice(5, 8)}/${document.slice(8, 12)}-${document.slice(12)}`;
   return value;
 }

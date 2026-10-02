@@ -166,10 +166,10 @@ export function CohortLifecycleManager({
     setError("");
     try {
       await putJson<Cohort>(`/api/backend/cohorts/${encodeURIComponent(cohort.id)}`, {
-        code: values ? String(values.get("code")) : cohort.code,
+        code: values && cohort.status === "PLANNED" ? String(values.get("code") ?? "").trim().toUpperCase() : cohort.code,
         name: values ? String(values.get("name")) : cohort.name,
         defaultWeekday: values ? Number(values.get("defaultWeekday")) : cohort.defaultWeekday,
-        shiftCode: values ? String(values.get("shiftCode")) : cohort.shiftCode,
+        shiftCode: values ? String(values.get("shiftCode") ?? "").trim().toUpperCase() : cohort.shiftCode,
         startDate: values ? String(values.get("startDate")) : cohort.startDate,
         endDate: values ? String(values.get("endDate") ?? "") || null : cohort.endDate,
         maxLearners: values ? String(values.get("maxLearners") ?? "") ? Number(values.get("maxLearners")) : null : cohort.maxLearners,

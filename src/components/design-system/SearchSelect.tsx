@@ -3,19 +3,21 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { apiRequest, requestErrorMessage } from "@/lib/api/client";
 import type { PageResponse } from "@/lib/api/contracts";
+import { filterDetailItems } from "@/lib/detail-filter";
 
 export type SearchOption = { id: string; label: string };
 
-export function SearchSelect({ name, label, endpoint, required = false, disabled = false,
-  initialOption, onSelect }: {
+type Props = {
   name: string;
   label: string;
-  endpoint: string;
   required?: boolean;
   disabled?: boolean;
   initialOption?: SearchOption;
   onSelect?: (option: SearchOption | undefined) => void;
-}) {
+} & ({ endpoint: string; options?: never } | { endpoint?: never; options: SearchOption[] });
+
+export function SearchSelect({ name, label, endpoint, options: localOptions, required = false, disabled = false,
+  initialOption, onSelect }: Props) {
   const listId = useId();
   const input = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState(initialOption);
@@ -26,7 +28,16 @@ export function SearchSelect({ name, label, endpoint, required = false, disabled
   const [retry, setRetry] = useState(0);
   const [response, setResponse] = useState<{ key: string; data?: PageResponse<SearchOption>; error?: string }>();
   const key = `${endpoint}:${query}:${page}:${retry}`;
-  const current = response?.key === key ? response : undefined;
+  const matching = localOptions ? filterDetailItems(localOptions, query, (option) => option.label) : [];
+  const totalPages = Math.ceil(matching.length / 5);
+  const localPage = Math.min(page, Math.max(0, totalPages - 1));
+  const current: { data?: PageResponse<SearchOption>; error?: string } | undefined = localOptions ? {
+    data: {
+      content: matching.slice(localPage * 5, (localPage + 1) * 5),
+      page: localPage, size: 5, totalElements: matching.length, totalPages,
+      first: localPage === 0, last: localPage >= totalPages - 1,
+    },
+  } : response?.key === key ? response : undefined;
   const options = current?.data?.content ?? [];
   const loading = open && !current;
 
@@ -35,7 +46,7 @@ export function SearchSelect({ name, label, endpoint, required = false, disabled
   }, [selected, required, query]);
 
   useEffect(() => {
-    if (!open || disabled) return;
+    if (!endpoint || !open || disabled) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       const separator = endpoint.includes("?") ? "&" : "?";

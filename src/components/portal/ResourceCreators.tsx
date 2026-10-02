@@ -2,7 +2,9 @@
 
 import { SearchSelect } from "@/components/design-system/SearchSelect";
 import { MaskedInput } from "@/components/design-system/MaskedInput";
-import { digitsOnly, phoneDigits, parseSalary } from "@/lib/inputs/masks";
+import { cnpjCharacters, digitsOnly, phoneDigits, parseSalary } from "@/lib/inputs/masks";
+import { addressFrom } from "@/lib/inputs/address";
+import { AddressFields } from "@/components/portal/AddressFields";
 
 import { ApprenticeshipWorkloadField } from "@/components/portal/ApprenticeshipWorkloadField";
 import { apprenticeshipWorkloadMinutes } from "@/lib/apprenticeship/policy";
@@ -46,23 +48,6 @@ function CreatorModal({ title, trigger, children, disabled, icon = "plus", befor
     {loadError ? <p role="alert" className="mt-2 text-sm text-rose-700">{loadError}</p> : null}
     {open ? <div className="fixed inset-0 z-[100] grid place-items-center bg-[var(--inat-ink)]/70 p-4" role="dialog" aria-modal="true"><div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto border border-[var(--inat-line)] bg-white shadow-2xl"><div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--inat-line)] bg-white px-5 py-4"><h2 className="text-lg font-semibold">{title}</h2><button type="button" onClick={() => setOpen(false)} className="text-xl" aria-label="Fechar">×</button></div>{children(() => setOpen(false))}</div></div> : null}
   </>;
-}
-
-function AddressFields({ address }: { address?: Person["address"] }) {
-  return <fieldset className="grid gap-4 border border-[var(--inat-line)] p-4 sm:grid-cols-2"><legend className="px-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--inat-muted)]">Endereço obrigatório</legend><label><span className="portal-label">CEP</span><MaskedInput name="postalCode" mask="postalCode" defaultValue={address?.postalCode ?? ""} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Logradouro</span><input name="street" defaultValue={address?.street ?? ""} maxLength={150} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Número</span><input name="streetNumber" defaultValue={address?.streetNumber ?? ""} maxLength={20} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Complemento</span><input name="addressLine2" defaultValue={address?.addressLine2 ?? ""} maxLength={100} className="portal-field mt-2 h-10 w-full px-3" /></label><label><span className="portal-label">Bairro</span><input name="district" defaultValue={address?.district ?? ""} maxLength={100} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">Cidade</span><input name="city" defaultValue={address?.city ?? ""} maxLength={100} className="portal-field mt-2 h-10 w-full px-3" required /></label><label><span className="portal-label">UF</span><input name="stateCode" defaultValue={address?.stateCode ?? "PR"} pattern="[A-Za-z]{2}" maxLength={2} className="portal-field mt-2 h-10 w-full px-3 uppercase" required /></label><label><span className="portal-label">País</span><input name="countryCode" defaultValue={address?.countryCode ?? "BR"} pattern="[A-Za-z]{2}" maxLength={2} className="portal-field mt-2 h-10 w-full px-3 uppercase" required /></label></fieldset>;
-}
-
-function addressFrom(form: FormData) {
-  return {
-    postalCode: digitsOnly(String(form.get("postalCode") ?? "")),
-    street: String(form.get("street") ?? "").trim(),
-    streetNumber: String(form.get("streetNumber") ?? "").trim(),
-    addressLine2: String(form.get("addressLine2") ?? "").trim() || null,
-    district: String(form.get("district") ?? "").trim(),
-    city: String(form.get("city") ?? "").trim(),
-    stateCode: String(form.get("stateCode") ?? "").toUpperCase(),
-    countryCode: String(form.get("countryCode") ?? "BR").toUpperCase(),
-  };
 }
 
 const genderOptions = ["Mulher", "Homem", "Mulher trans", "Homem trans", "Pessoa não binária", "Outra identidade de gênero", "Prefiro não informar"];
@@ -170,9 +155,9 @@ export function OrganizationCreator() {
     parentOrganizationId: String(form.get("parentOrganizationId") ?? "") || null,
     address: addressFrom(form),
     organizationTypes: form.getAll("organizationTypes").map(String),
-    legalName: String(form.get("legalName") ?? "").trim(),
-    tradeName: String(form.get("tradeName") ?? "").trim() || null,
-    taxId: digitsOnly(String(form.get("taxId") ?? "")),
+    legalName: String(form.get("legalName") ?? "").trim().toUpperCase(),
+    tradeName: String(form.get("tradeName") ?? "").trim().toUpperCase() || null,
+    taxId: cnpjCharacters(String(form.get("taxId") ?? "")),
     contactEmail: String(form.get("contactEmail") ?? "").trim(),
     phoneNumber: phoneDigits(String(form.get("phoneNumber") ?? "")),
     attendanceClosingDay: form.get("attendanceClosingDay")
@@ -209,7 +194,7 @@ function learnerFrom(form: FormData) {
     },
     guardians: guardianPersonId ? [{
       guardianPersonId,
-      relationshipType: String(form.get("relationshipType") ?? "").trim(),
+      relationshipType: String(form.get("relationshipType") ?? "").trim().toUpperCase(),
       legalGuardian: form.get("legalGuardian") === "on",
       primaryContact: form.get("primaryContact") === "on",
     }] : [],
@@ -237,10 +222,10 @@ function LearnerGuardianFields() {
 export function CohortCreator() {
   const router = useRouter();
   return <CreatorModal title="Criar turma" trigger="Nova turma">{(close) => <RequestForm close={close} success={() => router.refresh()} endpoint="/api/backend/cohorts" successLabel="Criar turma" build={(form) => ({
-    code: String(form.get("code") ?? "").trim(),
+    code: String(form.get("code") ?? "").trim().toUpperCase(),
     name: String(form.get("name") ?? "").trim(),
     defaultWeekday: Number(form.get("defaultWeekday")),
-    shiftCode: String(form.get("shiftCode") ?? "").trim(),
+    shiftCode: String(form.get("shiftCode") ?? "").trim().toUpperCase(),
     startDate: String(form.get("startDate") ?? ""),
     endDate: String(form.get("endDate") ?? "") || null,
     maxLearners: String(form.get("maxLearners") ?? "") ? Number(form.get("maxLearners")) : null,

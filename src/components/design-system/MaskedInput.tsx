@@ -8,9 +8,9 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "def
   defaultValue?: string | number | null;
 };
 
-const settings: Record<Exclude<InputMask, "salary">, { maxLength: number; pattern: string; inputMode: "numeric" | "tel" }> = {
+const settings: Record<Exclude<InputMask, "salary">, { maxLength: number; pattern: string; inputMode: "numeric" | "tel" | "text" }> = {
   cpf: { maxLength: 14, pattern: "[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2}", inputMode: "numeric" },
-  cnpj: { maxLength: 18, pattern: "[0-9]{2}\\.[0-9]{3}\\.[0-9]{3}/[0-9]{4}-[0-9]{2}", inputMode: "numeric" },
+  cnpj: { maxLength: 18, pattern: "[A-Z0-9]{2}\\.[A-Z0-9]{3}\\.[A-Z0-9]{3}/[A-Z0-9]{4}-[0-9]{2}", inputMode: "text" },
   phone: { maxLength: 19, pattern: "\\([1-9][0-9]\\) (?:9[0-9]{4}|[2-5][0-9]{3})-[0-9]{4}", inputMode: "tel" },
   postalCode: { maxLength: 9, pattern: "[0-9]{5}-[0-9]{3}", inputMode: "numeric" },
 };

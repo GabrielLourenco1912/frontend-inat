@@ -4,6 +4,10 @@ export function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
 }
 
+export function cnpjCharacters(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 export function phoneDigits(value: string) {
   const digits = digitsOnly(value);
   return (digits.length > 11 && digits.startsWith("55") ? digits.slice(2) : digits).slice(0, 11);
@@ -33,6 +37,10 @@ export function formatMaskedInput(mask: InputMask, value: string) {
     const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return separator < 0 ? grouped : `${grouped || "0"},${digitsOnly(raw.slice(separator + 1)).slice(0, 2)}`;
   }
+  if (mask === "cnpj") {
+    const cnpj = cnpjCharacters(value).slice(0, 14);
+    return cnpj.replace(/^([A-Z0-9]{2})([A-Z0-9])/, "$1.$2").replace(/^([A-Z0-9]{2}\.[A-Z0-9]{3})([A-Z0-9])/, "$1.$2").replace(/^([A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{3})([A-Z0-9])/, "$1/$2").replace(/^([A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{3}\/[A-Z0-9]{4})([A-Z0-9])/, "$1-$2");
+  }
   const digits = mask === "phone" ? phoneDigits(value) : digitsOnly(value);
   if (mask === "postalCode") {
     const code = digits.slice(0, 8);
@@ -41,10 +49,6 @@ export function formatMaskedInput(mask: InputMask, value: string) {
   if (mask === "cpf") {
     const cpf = digits.slice(0, 11);
     return cpf.replace(/^(\d{3})(\d)/, "$1.$2").replace(/^(\d{3}\.\d{3})(\d)/, "$1.$2").replace(/^(\d{3}\.\d{3}\.\d{3})(\d)/, "$1-$2");
-  }
-  if (mask === "cnpj") {
-    const cnpj = digits.slice(0, 14);
-    return cnpj.replace(/^(\d{2})(\d)/, "$1.$2").replace(/^(\d{2}\.\d{3})(\d)/, "$1.$2").replace(/^(\d{2}\.\d{3}\.\d{3})(\d)/, "$1/$2").replace(/^(\d{2}\.\d{3}\.\d{3}\/\d{4})(\d)/, "$1-$2");
   }
   if (digits.length <= 2) return digits ? `(${digits}` : "";
   const local = digits.slice(2);

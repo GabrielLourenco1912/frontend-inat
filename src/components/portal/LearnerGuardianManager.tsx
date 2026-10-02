@@ -21,7 +21,7 @@ export function LearnerGuardianManager({ learner, guardians, people, canManage }
     event.preventDefault(); setSaving(true); setError("");
     const form = new FormData(event.currentTarget);
     const guardianPersonId = editing?.guardianPersonId || String(form.get("guardianPersonId"));
-    const body = { guardianPersonId, relationshipType: String(form.get("relationshipType") ?? "").trim(), legalGuardian: form.get("legalGuardian") === "on", primaryContact: form.get("primaryContact") === "on" };
+    const body = { guardianPersonId, relationshipType: String(form.get("relationshipType") ?? "").trim().toUpperCase(), legalGuardian: form.get("legalGuardian") === "on", primaryContact: form.get("primaryContact") === "on" };
     try {
       const endpoint = `/api/backend/learners/${encodeURIComponent(learner.id)}/guardians${editing ? `/${encodeURIComponent(editing.guardianPersonId)}` : ""}`;
       if (editing) await putJson(endpoint, body); else await postJson(endpoint, body);
