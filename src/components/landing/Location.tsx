@@ -3,15 +3,15 @@ import { GOOGLE_MAPS_URL, INSTITUTION_ADDRESS } from "@/lib/constants";
 
 export function Location() {
   return (
-    <section className="bg-white py-20 sm:py-24">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+    <section className="bg-white py-20 sm:py-28">
+      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-center">
           <div className="scroll-reveal" data-reveal="left">
             <p className="section-eyebrow">Localização</p>
-            <h2 className="section-title mt-3 text-3xl font-bold sm:text-4xl">
+            <h2 className="section-title mt-4 text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.04em] sm:text-5xl">
               Atendimento institucional em Paranaguá
             </h2>
-            <p className="section-copy mt-6 text-lg leading-8">
+            <p className="section-copy mt-6 max-w-xl text-base leading-8 sm:text-lg">
               {INSTITUTION_ADDRESS}
             </p>
             <a

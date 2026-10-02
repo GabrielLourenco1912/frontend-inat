@@ -55,7 +55,7 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(8, 130, 133, 0.35);
+  outline: 3px solid var(--inat-focus-ring, rgba(8, 130, 133, 0.35));
   outline-offset: 3px;
 }
 
