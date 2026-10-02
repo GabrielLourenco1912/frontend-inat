@@ -11,6 +11,7 @@ import ts from "typescript";
 // Execute the real policy, contract payload builder and lesson server page.
 // Only framework hooks, data requests and unrelated child components are stubbed.
 const sourceRoot = fileURLToPath(new URL("../src/", import.meta.url));
+const testRoot = fileURLToPath(new URL("./", import.meta.url));
 const requireDependency = createRequire(import.meta.url);
 const modules = new Map();
 const requests = [];
@@ -19,7 +20,7 @@ let actor;
 let data;
 
 function load(relativePath) {
-  const base = path.join(sourceRoot, relativePath);
+  const base = path.join(relativePath.startsWith("fixtures/") ? testRoot : sourceRoot, relativePath);
   const filename = [base, `${base}.ts`, `${base}.tsx`].find(existsSync);
   assert.ok(filename, `Missing test module: ${relativePath}`);
   if (modules.has(filename)) return modules.get(filename);
@@ -65,6 +66,7 @@ beforeEach(() => {
   const ids = ["twenty", "thirty", "listed", "suspended", "inactive-person", "expired", "forty"];
   data = {
     "/api/lessons/lesson": { id: "lesson", startsAt: "2026-09-10T13:00:00Z", deliveryMode: "ONLINE" },
+    "/api/lessons/lesson/files": [],
     "/api/activities/lesson/lesson": [],
     "/api/lesson-participants/lesson/lesson": [{ learnerId: "listed", status: "EXPECTED" }],
     "/api/attendance-records/lesson/lesson": [],
@@ -84,8 +86,8 @@ test("only the 20h and 30h options are rendered, defaulting to 20h", () => {
   assert.doesNotMatch(html, /type="number"/);
 });
 
-test("the demo contracts illustrate both supported models", () => {
-  const { contracts } = load("mocks/backend-adapter");
+test("contract fixtures cover both supported workload models", () => {
+  const { contracts } = load("fixtures/backend-adapter");
   assert.deepEqual([...new Set(contracts.map((contract) => contract.weeklyWorkloadMinutes))].sort(), [1200, 1800]);
   assert.ok(contracts.some((contract) => contract.status === "ACTIVE" && contract.weeklyWorkloadMinutes === 1800));
 });
@@ -140,7 +142,7 @@ test("a learner cannot use someone else's 30-hour contract", () => {
 });
 
 function participantOptions() {
-  const mock = load("mocks/backend-adapter");
+  const mock = load("fixtures/backend-adapter");
   const substitutions = { learners: data["/api/learners"], people: data["/api/people"], contracts: data["/api/contracts"], lessons: [data["/api/lessons/lesson"]], lessonParticipants: data["/api/lesson-participants/lesson/lesson"].map((item) => ({ ...item, lessonId: "lesson" })) };
   const originals = Object.fromEntries(Object.keys(substitutions).map((key) => [key, [...mock[key]]]));
   try {

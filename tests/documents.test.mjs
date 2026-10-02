@@ -7,16 +7,17 @@ import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import ts from "typescript";
 
-// Execute the actual server pages and mock adapter without starting Next.js.
+// Execute the actual server pages against test-only API fixtures.
 // UI components are placeholders; browser checks cover their interactions.
 const sourceRoot = fileURLToPath(new URL("../src/", import.meta.url));
+const testRoot = fileURLToPath(new URL("./", import.meta.url));
 const requireDependency = createRequire(import.meta.url);
 const modules = new Map();
 const requests = [];
 const componentStubs = new Proxy({}, { get: (_, name) => String(name) });
 
 function load(relativePath) {
-  const base = path.join(sourceRoot, relativePath);
+  const base = path.join(relativePath.startsWith("fixtures/") ? testRoot : sourceRoot, relativePath);
   const filename = [base, `${base}.ts`, `${base}.tsx`].find(existsSync);
   assert.ok(filename, `Missing test module: ${relativePath}`);
   if (modules.has(filename)) return modules.get(filename);
@@ -29,11 +30,10 @@ function load(relativePath) {
   const localRequire = (id) => {
     if (id === "server-only") return {};
     if (id.startsWith("@/components/")) return componentStubs;
-    // Keep page tests independent of the branch's real/mock transport.
-    if (id === "@/lib/auth/session") return { requireCapability: async () => load("mocks/backend-adapter").mockActor };
+    if (id === "@/lib/auth/session") return { requireCapability: async () => load("fixtures/backend-adapter").mockActor };
     if (id === "next/headers") return { cookies: async () => ({ get: () => ({ value: "test-access-token" }) }) };
     if (id === "@/lib/api/backend") return { backendFetch: async (url) => {
-      const result = load("mocks/backend-adapter").mockApiGet(url);
+      const result = load("fixtures/backend-adapter").mockApiGet(url);
       return new Response(JSON.stringify({ data: result.data, message: result.message }), { status: result.status });
     } };
     if (id === "next/navigation") return {
@@ -54,7 +54,7 @@ function load(relativePath) {
   return exports;
 }
 
-const mock = load("mocks/backend-adapter");
+const mock = load("fixtures/backend-adapter");
 const navigation = load("lib/documents/navigation");
 const ExpiredPage = load("app/sistema/documentos/page").default;
 const PersonPage = load("app/sistema/pessoas/[personId]/page").default;

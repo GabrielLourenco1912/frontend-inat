@@ -12,7 +12,8 @@ let actor;
 const components = new Proxy({}, { get: (_, name) => String(name) });
 function load(relativePath) {
   if (modules.has(relativePath)) return modules.get(relativePath);
-  const filename = [".ts", ".tsx"].map((ext) => new URL(`../src/${relativePath}${ext}`, import.meta.url)).find(existsSync);
+  const root = relativePath.startsWith("fixtures/") ? "./" : "../src/";
+  const filename = [".ts", ".tsx"].map((ext) => new URL(`${root}${relativePath}${ext}`, import.meta.url)).find(existsSync);
   assert.ok(filename, relativePath);
   const exports = {};
   modules.set(relativePath, exports);
@@ -25,7 +26,7 @@ function load(relativePath) {
     if (id === "@/lib/auth/session") return { requireCapability: async () => actor, requireActor: async () => actor };
     if (id === "next/headers") return { cookies: async () => ({ get: () => ({ value: "test-token" }) }) };
     if (id === "@/lib/api/backend") return { backendFetch: async (url) => {
-      const result = load("mocks/backend-adapter").mockApiGet(url);
+      const result = load("fixtures/backend-adapter").mockApiGet(url);
       return new Response(JSON.stringify({ data: result.data, message: result.message }), { status: result.status });
     } };
     if (id === "next/navigation") return {
@@ -45,7 +46,7 @@ function load(relativePath) {
   }
   return exports;
 }
-const mock = load("mocks/backend-adapter");
+const mock = load("fixtures/backend-adapter");
 const { pageIndex, pageHref, paginationProps, paginateItems } = load("lib/pagination");
 const { serverListPage } = load("lib/api/pagination");
 beforeEach(() => { requests.length = 0; actor = { ...mock.mockActor, roles: ["ADMIN"] }; });
