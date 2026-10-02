@@ -26,7 +26,7 @@ export function About() {
     <section id="sobre" className="scroll-mt-24 bg-white py-20 sm:py-28">
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-          <div className="scroll-reveal lg:sticky lg:top-28" data-reveal="left">
+          <div className="scroll-reveal" data-reveal="left">
             <p className="section-eyebrow">O INAT</p>
             <h2 className="section-title mt-4 text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.04em] sm:text-5xl">
               Aprender. Trabalhar. Pertencer.
